@@ -1,0 +1,53 @@
+#[derive(Debug)]
+pub struct Token {
+    pub typ: TokenType,
+    pub literal: String,
+}
+
+impl Token {
+    pub fn new(typ: TokenType, ch: char) -> Self {
+        Self {
+            typ,
+            literal: ch.to_string(),
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub enum TokenType {
+    ILLEGAL,
+    EOF,
+
+    // Identifiers and literals
+    IDENT,
+    INT,
+
+    // Operators
+    ASSIGN,
+    PLUS,
+
+    // Delimiters
+    COMMA,
+    SEMICOLON,
+
+    LPAREN,
+    RPAREN,
+    LBRACE,
+    RBRACE,
+
+    // Keywords
+    FUNCTION,
+    LET,
+}
+
+impl TokenType {
+    pub fn serialize(string: &String) -> TokenType {
+        let value = match string.as_str() {
+            "let" => Self::LET,
+            "fn" => Self::FUNCTION,
+            _ => Self::IDENT,
+        };
+
+        value
+    }
+}
