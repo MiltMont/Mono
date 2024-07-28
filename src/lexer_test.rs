@@ -19,13 +19,34 @@ mod tests {
     }
     #[test]
     fn test_next_token() {
-        let input = "let testing = 5;".to_string();
+        let input = "let testing = 5;
+        let add = fn(x,y) {
+            x + y;
+        };
+        "
+        .to_string();
 
         let tests: Vec<TestType> = vec![
             TestType::new(TokenType::LET, "let".to_string()),
             TestType::new(TokenType::IDENT, "testing".to_string()),
             TestType::new(TokenType::ASSIGN, "=".to_string()),
             TestType::new(TokenType::INT, "5".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::LET, "let".to_string()),
+            TestType::new(TokenType::IDENT, "add".to_string()),
+            TestType::new(TokenType::ASSIGN, "=".to_string()),
+            TestType::new(TokenType::FUNCTION, "fn".to_string()),
+            TestType::new(TokenType::LPAREN, "(".to_string()),
+            TestType::new(TokenType::IDENT, "x".to_string()),
+            TestType::new(TokenType::COMMA, ",".to_string()),
+            TestType::new(TokenType::IDENT, "y".to_string()),
+            TestType::new(TokenType::RPAREN, ")".to_string()),
+            TestType::new(TokenType::LBRACE, "{".to_string()),
+            TestType::new(TokenType::IDENT, "x".to_string()),
+            TestType::new(TokenType::PLUS, "+".to_string()),
+            TestType::new(TokenType::IDENT, "y".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::RBRACE, "}".to_string()),
             TestType::new(TokenType::SEMICOLON, ";".to_string()),
             TestType::new(TokenType::EOF, " ".to_string()),
         ];

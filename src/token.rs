@@ -41,6 +41,7 @@ pub enum TokenType {
 }
 
 impl TokenType {
+    // TODO: Refactor this using a hashmap.
     pub fn serialize(string: &String) -> TokenType {
         let value = match string.as_str() {
             "let" => Self::LET,
