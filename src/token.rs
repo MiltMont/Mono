@@ -25,6 +25,13 @@ pub enum TokenType {
     // Operators
     ASSIGN,
     PLUS,
+    MINUS,
+    BANG,
+    ASTERISK,
+    SLASH,
+
+    LT,
+    GT,
 
     // Delimiters
     COMMA,
@@ -38,6 +45,11 @@ pub enum TokenType {
     // Keywords
     FUNCTION,
     LET,
+    TRUE,
+    FALSE,
+    IF,
+    ELSE,
+    RETURN,
 }
 
 impl TokenType {
@@ -46,6 +58,11 @@ impl TokenType {
         let value = match string.as_str() {
             "let" => Self::LET,
             "fn" => Self::FUNCTION,
+            "true" => Self::TRUE,
+            "false" => Self::FALSE,
+            "if" => Self::IF,
+            "else" => Self::ELSE,
+            "return" => Self::RETURN,
             _ => Self::IDENT,
         };
 

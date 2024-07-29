@@ -39,11 +39,10 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
-        let mut token: Token = Token::new(TokenType::LET, ' ');
+        let mut token: Token = Token::new(TokenType::ILLEGAL, ' ');
 
         self.skip_whitespace();
 
-        dbg!(&token);
         match self.ch {
             '=' => token = Token::new(TokenType::ASSIGN, self.ch),
             ';' => token = Token::new(TokenType::SEMICOLON, self.ch),
@@ -51,6 +50,12 @@ impl Lexer {
             ')' => token = Token::new(TokenType::RPAREN, self.ch),
             ',' => token = Token::new(TokenType::COMMA, self.ch),
             '+' => token = Token::new(TokenType::PLUS, self.ch),
+            '-' => token = Token::new(TokenType::MINUS, self.ch),
+            '!' => token = Token::new(TokenType::BANG, self.ch),
+            '/' => token = Token::new(TokenType::SLASH, self.ch),
+            '*' => token = Token::new(TokenType::ASTERISK, self.ch),
+            '<' => token = Token::new(TokenType::LT, self.ch),
+            '>' => token = Token::new(TokenType::GT, self.ch),
             '{' => token = Token::new(TokenType::LBRACE, self.ch),
             '}' => token = Token::new(TokenType::RBRACE, self.ch),
             '0' => token = Token::new(TokenType::EOF, ' '),

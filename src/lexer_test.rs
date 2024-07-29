@@ -23,6 +23,16 @@ mod tests {
         let add = fn(x,y) {
             x + y;
         };
+
+        !-/*5;
+
+        5 < 10 > 5;
+
+        if (5 < 10) {
+            return true;
+        } else {
+            return false;
+        };
         "
         .to_string();
 
@@ -45,6 +55,36 @@ mod tests {
             TestType::new(TokenType::IDENT, "x".to_string()),
             TestType::new(TokenType::PLUS, "+".to_string()),
             TestType::new(TokenType::IDENT, "y".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::RBRACE, "}".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::BANG, "!".to_string()),
+            TestType::new(TokenType::MINUS, "-".to_string()),
+            TestType::new(TokenType::SLASH, "/".to_string()),
+            TestType::new(TokenType::ASTERISK, "*".to_string()),
+            TestType::new(TokenType::INT, "5".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::INT, "5".to_string()),
+            TestType::new(TokenType::LT, "<".to_string()),
+            TestType::new(TokenType::INT, "10".to_string()),
+            TestType::new(TokenType::GT, ">".to_string()),
+            TestType::new(TokenType::INT, "5".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::IF, "if".to_string()),
+            TestType::new(TokenType::LPAREN, "(".to_string()),
+            TestType::new(TokenType::INT, "5".to_string()),
+            TestType::new(TokenType::LT, "<".to_string()),
+            TestType::new(TokenType::INT, "10".to_string()),
+            TestType::new(TokenType::RPAREN, ")".to_string()),
+            TestType::new(TokenType::LBRACE, "{".to_string()),
+            TestType::new(TokenType::RETURN, "return".to_string()),
+            TestType::new(TokenType::TRUE, "true".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::RBRACE, "}".to_string()),
+            TestType::new(TokenType::ELSE, "else".to_string()),
+            TestType::new(TokenType::LBRACE, "{".to_string()),
+            TestType::new(TokenType::RETURN, "return".to_string()),
+            TestType::new(TokenType::FALSE, "false".to_string()),
             TestType::new(TokenType::SEMICOLON, ";".to_string()),
             TestType::new(TokenType::RBRACE, "}".to_string()),
             TestType::new(TokenType::SEMICOLON, ";".to_string()),
