@@ -44,14 +44,30 @@ impl Lexer {
         self.skip_whitespace();
 
         match self.ch {
-            '=' => token = Token::new(TokenType::ASSIGN, self.ch),
+            '=' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    token.typ = TokenType::EQ;
+                    token.literal = String::from("==");
+                } else {
+                    token = Token::new(TokenType::ASSIGN, self.ch);
+                }
+            }
             ';' => token = Token::new(TokenType::SEMICOLON, self.ch),
             '(' => token = Token::new(TokenType::LPAREN, self.ch),
             ')' => token = Token::new(TokenType::RPAREN, self.ch),
             ',' => token = Token::new(TokenType::COMMA, self.ch),
             '+' => token = Token::new(TokenType::PLUS, self.ch),
             '-' => token = Token::new(TokenType::MINUS, self.ch),
-            '!' => token = Token::new(TokenType::BANG, self.ch),
+            '!' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    token.typ = TokenType::NEQ;
+                    token.literal = String::from("!=");
+                } else {
+                    token = Token::new(TokenType::BANG, self.ch)
+                }
+            }
             '/' => token = Token::new(TokenType::SLASH, self.ch),
             '*' => token = Token::new(TokenType::ASTERISK, self.ch),
             '<' => token = Token::new(TokenType::LT, self.ch),
@@ -95,6 +111,14 @@ impl Lexer {
         }
 
         self.input[position..self.position].to_string()
+    }
+
+    fn peek_char(&self) -> char {
+        if self.read_position >= self.input.len() {
+            '0'
+        } else {
+            self.input.as_bytes()[self.read_position] as char
+        }
     }
 }
 

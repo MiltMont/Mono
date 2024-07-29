@@ -33,6 +33,9 @@ mod tests {
         } else {
             return false;
         };
+
+        10 == 10;
+        10 != 9;
         "
         .to_string();
 
@@ -87,6 +90,14 @@ mod tests {
             TestType::new(TokenType::FALSE, "false".to_string()),
             TestType::new(TokenType::SEMICOLON, ";".to_string()),
             TestType::new(TokenType::RBRACE, "}".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::INT, "10".to_string()),
+            TestType::new(TokenType::EQ, "==".to_string()),
+            TestType::new(TokenType::INT, "10".to_string()),
+            TestType::new(TokenType::SEMICOLON, ";".to_string()),
+            TestType::new(TokenType::INT, "10".to_string()),
+            TestType::new(TokenType::NEQ, "!=".to_string()),
+            TestType::new(TokenType::INT, "9".to_string()),
             TestType::new(TokenType::SEMICOLON, ";".to_string()),
             TestType::new(TokenType::EOF, " ".to_string()),
         ];

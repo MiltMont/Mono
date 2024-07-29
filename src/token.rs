@@ -50,6 +50,9 @@ pub enum TokenType {
     IF,
     ELSE,
     RETURN,
+
+    EQ,
+    NEQ,
 }
 
 impl TokenType {
