@@ -81,6 +81,7 @@ mod tests {
                     return false;
                 }
             }
+            _ => {}
         }
 
         true
@@ -100,5 +101,44 @@ mod tests {
         }
 
         panic!();
+    }
+
+    #[test]
+    fn test_return_statements() {
+        let input = "
+            return 5;
+            return 10;
+            return 15;
+        "
+        .to_string();
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+        check_parser_errors(parser);
+
+        if program.statements.len() != 3 {
+            panic!(
+                "program.statements does not contain 3 statements. Got {:?}",
+                program.statements.leak()
+            );
+        }
+
+        for statement in program.statements {
+            match statement {
+                StatementVariant::Return(s) => {
+                    if s.token_literal() != "return" {
+                        panic!(
+                            "statement.token_literal is not 'return', got {}",
+                            s.token_literal()
+                        );
+                    }
+                }
+                _ => {
+                    eprint!("statement is not ReturnStatement, got {:?}", statement);
+                }
+            }
+        }
     }
 }

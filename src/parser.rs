@@ -1,7 +1,5 @@
-use std::fmt::format;
-
 use crate::{
-    ast::{Identifier, LetStatement, Program, StatementVariant},
+    ast::{Identifier, LetStatement, Program, ReturnStatement, StatementVariant},
     lexer::Lexer,
     token::{Token, TokenType},
 };
@@ -63,8 +61,25 @@ impl Parser {
     fn parse_statement(&mut self) -> Option<StatementVariant> {
         match self.current_token.typ {
             TokenType::LET => self.parse_let_statement(),
+            TokenType::RETURN => self.parse_return_statement(),
             _ => None,
         }
+    }
+
+    fn parse_return_statement(&mut self) -> Option<StatementVariant> {
+        let statement = ReturnStatement {
+            token: self.current_token.clone(),
+            return_value: (),
+        };
+
+        self.next_token();
+
+        // We are skipping expressions until we encounter a semicolon
+        while !self.current_token_is(TokenType::SEMICOLON) {
+            self.next_token();
+        }
+
+        Some(StatementVariant::Return(statement))
     }
 
     fn parse_let_statement(&mut self) -> Option<StatementVariant> {

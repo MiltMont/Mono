@@ -8,9 +8,11 @@ pub trait Statement {
     fn statement_node(&self);
 }
 
+// Improve this!
 #[derive(Debug)]
 pub enum StatementVariant {
     Let(LetStatement),
+    Return(ReturnStatement),
 }
 
 // Statements are nodes.
@@ -18,6 +20,7 @@ impl Node for StatementVariant {
     fn token_literal(&self) -> String {
         match self {
             StatementVariant::Let(_) => "let".to_string(),
+            StatementVariant::Return(_) => "return".to_string(),
         }
     }
 }
@@ -88,6 +91,24 @@ impl Statement for LetStatement {
 }
 
 impl Node for LetStatement {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+}
+
+#[derive(Debug)]
+pub struct ReturnStatement {
+    pub token: Token,
+    pub return_value: ExpressionVariant,
+}
+
+impl Statement for ReturnStatement {
+    fn statement_node(&self) {
+        todo!()
+    }
+}
+
+impl Node for ReturnStatement {
     fn token_literal(&self) -> String {
         self.token.literal.clone()
     }
