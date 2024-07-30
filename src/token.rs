@@ -13,7 +13,7 @@ impl Token {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum TokenType {
     ILLEGAL,
     EOF,

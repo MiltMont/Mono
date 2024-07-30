@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+
     use crate::{
         ast::{Node, StatementVariant},
         lexer::Lexer,
@@ -31,6 +32,7 @@ mod tests {
         let mut parser = Parser::new(lexer);
 
         let program = parser.parse_program();
+        check_parser_errors(parser);
 
         if program.statements.len() == 0 {
             panic!("parse_program returned an empty vector.")
@@ -65,7 +67,6 @@ mod tests {
 
         match statement {
             StatementVariant::Let(s) => {
-                dbg!("{:?}", s);
                 if s.name.value != name {
                     dbg!(
                         "statement.name.value is not {}, got {}",
@@ -83,5 +84,21 @@ mod tests {
         }
 
         true
+    }
+
+    fn check_parser_errors(parser: Parser) {
+        let errors = parser.errors().clone();
+
+        if errors.len() == 0 {
+            return;
+        }
+
+        eprint!("\nParser has {} errors.\n", errors.len());
+
+        for message in errors {
+            eprint!("\nParser error: {:?}", message);
+        }
+
+        panic!();
     }
 }

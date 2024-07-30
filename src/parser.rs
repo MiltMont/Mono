@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use crate::{
     ast::{Identifier, LetStatement, Program, StatementVariant},
     lexer::Lexer,
@@ -8,6 +10,7 @@ pub struct Parser {
     lexer: Lexer,
     current_token: Token,
     peek_token: Token,
+    errors: Vec<String>,
 }
 
 impl Parser {
@@ -16,12 +19,26 @@ impl Parser {
             lexer,
             current_token: Token::new(TokenType::ILLEGAL, ' '),
             peek_token: Token::new(TokenType::ILLEGAL, ' '),
+            errors: Vec::new(),
         };
 
         parser.next_token();
         parser.next_token();
 
         parser
+    }
+
+    pub fn errors(&self) -> Vec<String> {
+        // This is not optimal...
+        self.errors.clone()
+    }
+
+    fn peek_error(&mut self, token: TokenType) {
+        let message = format!(
+            "Expected next token to be {:?}, got {:?} instead",
+            token, self.peek_token.typ
+        );
+        self.errors.push(message);
     }
 
     pub fn parse_program(&mut self) -> Program {
@@ -32,8 +49,6 @@ impl Parser {
         while !self.current_token_is(TokenType::EOF) {
             let statement = self.parse_statement();
 
-            dbg!("{:?}", &statement);
-            dbg!("{:?}", &program);
             match statement {
                 Some(s) => program.statements.push(s),
                 None => {}
@@ -102,6 +117,7 @@ impl Parser {
             self.next_token();
             true
         } else {
+            self.peek_error(token.clone());
             false
         }
     }
