@@ -1,3 +1,4 @@
+use colored::Colorize;
 use text_io::read;
 
 use crate::{lexer::Lexer, token::TokenType};
@@ -5,7 +6,7 @@ static PROMPT: &str = ">>";
 
 pub fn start() {
     loop {
-        print!("{PROMPT} ");
+        print!("{} ", ">>".yellow());
         let input: String = read!("{}\n");
 
         let mut lexer = Lexer::new(input);
