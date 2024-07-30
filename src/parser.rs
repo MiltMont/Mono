@@ -69,7 +69,7 @@ impl Parser {
     fn parse_return_statement(&mut self) -> Option<StatementVariant> {
         let statement = ReturnStatement {
             token: self.current_token.clone(),
-            return_value: (),
+            return_value: None,
         };
 
         self.next_token();
@@ -89,7 +89,7 @@ impl Parser {
                 token: self.current_token.clone(),
                 value: self.current_token.literal.clone(),
             },
-            value: (),
+            value: None,
         };
 
         if !self.expect_peek(TokenType::IDENT) {
