@@ -1,5 +1,10 @@
+use std::collections::HashMap;
+
 use crate::{
-    ast::{Identifier, LetStatement, Program, ReturnStatement, StatementVariant},
+    ast::{
+        ExpressionStatement, ExpressionVariant, Identifier, LetStatement, Program, ReturnStatement,
+        StatementVariant,
+    },
     lexer::Lexer,
     token::{Token, TokenType},
 };
@@ -9,6 +14,9 @@ pub struct Parser {
     current_token: Token,
     peek_token: Token,
     errors: Vec<String>,
+
+    prefix_parse_fns: HashMap<TokenType, PrefixParseFn>,
+    infix_parse_fns: HashMap<TokenType, InfixParseFn>,
 }
 
 impl Parser {
@@ -18,6 +26,8 @@ impl Parser {
             current_token: Token::new(TokenType::ILLEGAL, ' '),
             peek_token: Token::new(TokenType::ILLEGAL, ' '),
             errors: Vec::new(),
+            prefix_parse_fns: HashMap::new(),
+            infix_parse_fns: HashMap::new(),
         };
 
         parser.next_token();
@@ -62,8 +72,28 @@ impl Parser {
         match self.current_token.typ {
             TokenType::LET => self.parse_let_statement(),
             TokenType::RETURN => self.parse_return_statement(),
-            _ => None,
+            // We try to parse expression statement by default.
+            _ => self.parse_expression_statements(),
         }
+    }
+
+    fn parse_expression_statements(&mut self) -> Option<StatementVariant> {
+        let mut statement = ExpressionStatement {
+            token: self.current_token.clone(),
+            expression: None,
+        };
+
+        statement.expression = self.parse_expression();
+
+        if self.peek_token_is(TokenType::SEMICOLON) {
+            self.next_token();
+        }
+
+        Some(StatementVariant::Expression(statement))
+    }
+
+    fn parse_expression(&self) -> Option<Identifier> {
+        todo!()
     }
 
     fn parse_return_statement(&mut self) -> Option<StatementVariant> {
@@ -136,4 +166,16 @@ impl Parser {
             false
         }
     }
+
+    // These methods add entries to the hashmaps
+    fn register_prefix(&mut self, token_type: TokenType, function: PrefixParseFn) {
+        self.prefix_parse_fns.insert(token_type, function);
+    }
+
+    fn register_infix(&mut self, token_type: TokenType, function: InfixParseFn) {
+        self.infix_parse_fns.insert(token_type, function);
+    }
 }
+
+type PrefixParseFn = fn() -> ExpressionVariant;
+type InfixParseFn = fn(ExpressionVariant) -> ExpressionVariant;
