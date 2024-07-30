@@ -17,6 +17,7 @@ mod tests {
             }
         }
     }
+
     #[test]
     fn test_next_token() {
         let input = "let testing = 5;

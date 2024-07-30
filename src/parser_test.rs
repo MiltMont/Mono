@@ -65,6 +65,7 @@ mod tests {
 
         match statement {
             StatementVariant::Let(s) => {
+                dbg!("{:?}", s);
                 if s.name.value != name {
                     dbg!(
                         "statement.name.value is not {}, got {}",
@@ -79,7 +80,6 @@ mod tests {
                     return false;
                 }
             }
-            _ => panic!("statement is not a LetStatement, got {:?}", statement),
         }
 
         true

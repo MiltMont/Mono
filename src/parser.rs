@@ -1,5 +1,5 @@
 use crate::{
-    ast::{ExpressionVariant, Identifier, LetStatement, Program, Statement, StatementVariant},
+    ast::{Identifier, LetStatement, Program, StatementVariant},
     lexer::Lexer,
     token::{Token, TokenType},
 };
@@ -29,48 +29,26 @@ impl Parser {
             statements: Vec::new(),
         };
 
-        let eof = Token::new(TokenType::EOF, '0');
-
-        while self.current_token != eof {
+        while !self.current_token_is(TokenType::EOF) {
             let statement = self.parse_statement();
 
-            program.statements.push(statement);
+            dbg!("{:?}", &statement);
+            dbg!("{:?}", &program);
+            match statement {
+                Some(s) => program.statements.push(s),
+                None => {}
+            }
+            //program.statements.push(statement);
             self.next_token();
         }
 
         program
     }
 
-    fn parse_statement(&mut self) -> StatementVariant {
+    fn parse_statement(&mut self) -> Option<StatementVariant> {
         match self.current_token.typ {
             TokenType::LET => self.parse_let_statement(),
-            TokenType::ILLEGAL => todo!(),
-            TokenType::EOF => todo!(),
-            TokenType::IDENT => todo!(),
-            TokenType::INT => todo!(),
-            TokenType::ASSIGN => todo!(),
-            TokenType::PLUS => todo!(),
-            TokenType::MINUS => todo!(),
-            TokenType::BANG => todo!(),
-            TokenType::ASTERISK => todo!(),
-            TokenType::SLASH => todo!(),
-            TokenType::LT => todo!(),
-            TokenType::GT => todo!(),
-            TokenType::COMMA => todo!(),
-            TokenType::SEMICOLON => todo!(),
-            TokenType::LPAREN => todo!(),
-            TokenType::RPAREN => todo!(),
-            TokenType::LBRACE => todo!(),
-            TokenType::RBRACE => todo!(),
-            TokenType::FUNCTION => todo!(),
-
-            TokenType::TRUE => todo!(),
-            TokenType::FALSE => todo!(),
-            TokenType::IF => todo!(),
-            TokenType::ELSE => todo!(),
-            TokenType::RETURN => todo!(),
-            TokenType::EQ => todo!(),
-            TokenType::NEQ => todo!(),
+            _ => None,
         }
     }
 
@@ -99,8 +77,11 @@ impl Parser {
 
         // We are skipping the expressions
         // until we encounter a semicolon
+        while !self.current_token_is(TokenType::SEMICOLON) {
+            self.next_token();
+        }
 
-        todo!()
+        Some(StatementVariant::Let(statement))
     }
 
     fn next_token(&mut self) {

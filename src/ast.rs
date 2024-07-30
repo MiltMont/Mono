@@ -10,13 +10,15 @@ pub trait Statement {
 
 #[derive(Debug)]
 pub enum StatementVariant {
-    Let(Box<LetStatement>),
+    Let(LetStatement),
 }
 
 // Statements are nodes.
 impl Node for StatementVariant {
     fn token_literal(&self) -> String {
-        todo!()
+        match self {
+            StatementVariant::Let(_) => "let".to_string(),
+        }
     }
 }
 
@@ -39,6 +41,7 @@ impl Node for dyn Expression {
     }
 }
 
+#[derive(Debug)]
 pub struct Program {
     // This is a vector of objects implementing the Statement trait.
     pub statements: Vec<StatementVariant>,
