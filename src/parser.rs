@@ -33,7 +33,16 @@ impl Parser {
         parser.next_token();
         parser.next_token();
 
+        parser.register_prefix(TokenType::IDENT, Parser::parse_identifier);
+
         parser
+    }
+
+    fn parse_identifier(&self) -> Option<Identifier> {
+        Some(Identifier {
+            token: self.current_token.clone(),
+            value: self.current_token.literal.clone(),
+        })
     }
 
     pub fn errors(&self) -> Vec<String> {
@@ -83,7 +92,7 @@ impl Parser {
             expression: None,
         };
 
-        statement.expression = self.parse_expression();
+        statement.expression = self.parse_expression(Precedence::LOWEST);
 
         if self.peek_token_is(TokenType::SEMICOLON) {
             self.next_token();
@@ -92,8 +101,12 @@ impl Parser {
         Some(StatementVariant::Expression(statement))
     }
 
-    fn parse_expression(&self) -> Option<Identifier> {
-        todo!()
+    fn parse_expression(&self, precedence: Precedence) -> Option<Identifier> {
+        if !self.prefix_parse_fns.contains_key(&self.current_token.typ) {
+            None
+        } else {
+            self.prefix_parse_fns[&self.current_token.typ](&self)
+        }
     }
 
     fn parse_return_statement(&mut self) -> Option<StatementVariant> {
@@ -149,20 +162,20 @@ impl Parser {
         self.peek_token = self.lexer.next_token();
     }
 
-    fn current_token_is(&self, token: TokenType) -> bool {
-        self.current_token.typ == token
+    fn current_token_is(&self, token_type: TokenType) -> bool {
+        self.current_token.typ == token_type
     }
 
-    fn peek_token_is(&self, token: TokenType) -> bool {
-        self.peek_token.typ == token
+    fn peek_token_is(&self, token_type: TokenType) -> bool {
+        self.peek_token.typ == token_type
     }
 
-    fn expect_peek(&mut self, token: TokenType) -> bool {
-        if self.peek_token_is(token) {
+    fn expect_peek(&mut self, token_type: TokenType) -> bool {
+        if self.peek_token_is(token_type) {
             self.next_token();
             true
         } else {
-            self.peek_error(token.clone());
+            self.peek_error(token_type.clone());
             false
         }
     }
@@ -177,5 +190,22 @@ impl Parser {
     }
 }
 
-type PrefixParseFn = fn() -> ExpressionVariant;
+type PrefixParseFn = fn(&Parser) -> ExpressionVariant;
 type InfixParseFn = fn(ExpressionVariant) -> ExpressionVariant;
+
+#[derive(Clone, Copy)]
+enum Precedence {
+    LOWEST,
+    EQUALS,      // ==
+    LESSGREATER, // > OR <
+    SUM,         // +
+    PRODUCT,     // *
+    PREFIX,      // -X or !X
+    CALL,        // myFunction(X)
+}
+
+impl Precedence {
+    pub fn index(&self) -> usize {
+        *self as usize
+    }
+}
