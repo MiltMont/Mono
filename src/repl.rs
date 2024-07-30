@@ -2,7 +2,6 @@ use colored::Colorize;
 use text_io::read;
 
 use crate::{lexer::Lexer, token::TokenType};
-static PROMPT: &str = ">>";
 
 pub fn start() {
     loop {
