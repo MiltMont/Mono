@@ -80,7 +80,7 @@ impl Lexer {
                     token.literal = self.read_identifier();
                     token.typ = TokenType::serialize(&token.literal);
                     return token;
-                } else if is_digit(self.ch) {
+                } else if self.is_digit(self.ch) {
                     token.literal = self.read_number();
                     token.typ = TokenType::INT;
                     return token;
@@ -96,7 +96,8 @@ impl Lexer {
     fn read_number(&mut self) -> String {
         let position = self.position;
 
-        while is_digit(self.ch) {
+        // EOF is being passed as a number.
+        while self.is_digit(self.ch) {
             self.read_char();
         }
 
@@ -120,12 +121,18 @@ impl Lexer {
             self.input.as_bytes()[self.read_position] as char
         }
     }
+
+    fn is_digit(&self, ch: char) -> bool {
+        ch.is_numeric() && self.position != self.input.len()
+    }
 }
 
 fn is_letter(ch: char) -> bool {
     ch.is_alphabetic() || ch == '_'
 }
 
+/*
 fn is_digit(ch: char) -> bool {
     ch.is_numeric()
 }
+*/
