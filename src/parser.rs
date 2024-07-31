@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::format};
 
 use crate::{
     ast::{
         ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier, IntegerLiteral,
-        LetStatement, Program, ReturnStatement, StatementVariant,
+        LetStatement, PrefixExpression, Program, ReturnStatement, StatementVariant,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -35,10 +35,12 @@ impl Parser {
 
         parser.register_prefix(TokenType::IDENT, Parser::parse_identifier);
         parser.register_prefix(TokenType::INT, Parser::parse_integer_literal);
+        parser.register_prefix(TokenType::BANG, Parser::parse_prefix_expression);
+        parser.register_prefix(TokenType::MINUS, Parser::parse_prefix_expression);
         parser
     }
 
-    fn parse_identifier(&self) -> Option<ExpressionVariants> {
+    fn parse_identifier(&mut self) -> Option<ExpressionVariants> {
         Some(ExpressionVariants::Ident(Identifier {
             token: self.current_token.clone(),
             value: self.current_token.literal.clone(),
@@ -108,12 +110,39 @@ impl Parser {
         Some(StatementVariant::Expression(statement))
     }
 
-    fn parse_expression(&self, precedence: Precedence) -> Option<ExpressionVariants> {
+    fn no_prefix_parse_fn_error(&mut self, token_type: TokenType) {
+        self.errors.push(format!(
+            "No prefix parse function for {:?} found",
+            token_type,
+        ));
+    }
+
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<ExpressionVariants> {
         if !self.prefix_parse_fns.contains_key(&self.current_token.typ) {
+            self.no_prefix_parse_fn_error(self.current_token.typ);
             None
         } else {
-            self.prefix_parse_fns[&self.current_token.typ](&self)
+            self.prefix_parse_fns[&self.current_token.typ](self)
         }
+    }
+
+    fn parse_prefix_expression(&mut self) -> Option<ExpressionVariants> {
+        let mut expression = PrefixExpression {
+            token: self.current_token.clone(),
+            operator: self.current_token.literal.clone(),
+            right: Box::new(ExpressionVariants::Ident(Identifier {
+                token: Token::new(TokenType::ASTERISK, ';'),
+                value: "none".to_string(),
+            })),
+        };
+
+        self.next_token();
+
+        //expression.right = self.parse_expression(Precedence::PREFIX);
+        if let Some(ex) = self.parse_expression(Precedence::PREFIX) {
+            expression.right = Box::new(ex)
+        }
+        Some(ExpressionVariants::Prefix(expression))
     }
 
     fn parse_return_statement(&mut self) -> Option<StatementVariant> {
@@ -164,7 +193,7 @@ impl Parser {
         Some(StatementVariant::Let(statement))
     }
 
-    fn parse_integer_literal(&self) -> Option<ExpressionVariants> {
+    fn parse_integer_literal(&mut self) -> Option<ExpressionVariants> {
         let mut literal = IntegerLiteral {
             token: self.current_token.clone(),
             value: 0,
@@ -212,7 +241,7 @@ impl Parser {
     }
 }
 
-type PrefixParseFn = fn(&Parser) -> ExpressionVariant;
+type PrefixParseFn = fn(&mut Parser) -> ExpressionVariant;
 type InfixParseFn = fn(ExpressionVariant) -> ExpressionVariant;
 
 #[derive(Clone, Copy)]

@@ -4,7 +4,7 @@ mod tests {
     use core::panic;
 
     use mono::{
-        ast::{ExpressionVariants, Node, StatementVariant},
+        ast::{ExpressionVariants, Node, Program, StatementVariant},
         lexer::Lexer,
         parser::Parser,
     };
@@ -226,5 +226,95 @@ mod tests {
                 program.statements[0],
             );
         }
+    }
+
+    #[derive(Debug, Clone)]
+    struct PrefixTest {
+        input: String,
+        operator: String,
+        integer_value: i64,
+    }
+
+    impl PrefixTest {
+        fn new(input: &str, operator: &str, integer_value: i64) -> Self {
+            Self {
+                input: input.to_string(),
+                operator: operator.to_string(),
+                integer_value,
+            }
+        }
+    }
+
+    #[test]
+    fn test_parsing_prefix_expressions() {
+        let tests: Vec<PrefixTest> = vec![
+            PrefixTest::new("!5;", "!", 5),
+            PrefixTest::new("-15;", "-", 15),
+        ];
+
+        for test in tests {
+            let lexer = Lexer::new(test.input);
+            let mut parser = Parser::new(lexer);
+            let program = parser.parse_program();
+
+            check_parser_errors(parser);
+
+            if program.statements.len() != 1 {
+                panic!(
+                    "Program has not enough statements: {}",
+                    program.statements.len()
+                );
+            }
+
+            if let StatementVariant::Expression(expr_stmt) = &program.statements[0] {
+                if let Some(exp_variant) = &expr_stmt.expression {
+                    if let ExpressionVariants::Prefix(pre_expr) = exp_variant {
+                        if pre_expr.operator != test.operator {
+                            panic!(
+                                "pre_expr operator is not {}, got {}",
+                                test.operator, pre_expr.operator
+                            );
+                        }
+
+                        if !test_integer_literal(*pre_expr.right.clone(), test.integer_value) {
+                            break;
+                        }
+                    } else {
+                        panic!("pre_expr is not a PrefixExpression, got {:?}", exp_variant);
+                    }
+                } else {
+                    panic!("No expression!, got {:?}", &expr_stmt.expression);
+                }
+            } else {
+                panic!(
+                    "program.statements[0] is not an ExpressionStatement. Got {:?}",
+                    program.statements[0],
+                );
+            }
+        }
+    }
+
+    fn test_integer_literal(integer_literal: ExpressionVariants, value: i64) -> bool {
+        if let ExpressionVariants::Integer(int_var) = integer_literal {
+            if int_var.value != value {
+                eprint!("int_var.value not {}, got {}", value, int_var.value);
+                return false;
+            }
+
+            if int_var.token_literal() != format!("{}", value) {
+                eprint!(
+                    "int_var.token_literal() not {}, got {}",
+                    value,
+                    int_var.token_literal()
+                );
+                return false;
+            }
+        } else {
+            panic!(
+                "Integer_literal is not IntegerLiteral, got {:?}",
+                integer_literal
+            );
+        }
+        true
     }
 }

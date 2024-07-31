@@ -6,7 +6,7 @@ pub trait Node {
     fn string(&self) -> String;
 }
 
-pub trait Statement {
+pub trait Statement: Node {
     fn statement_node(&self);
 }
 
@@ -37,13 +37,11 @@ impl Node for StatementVariant {
     }
 }
 
-pub trait Expression {
+pub trait Expression: Node {
     fn expression_node(&self);
 }
 
-// Trying to use traits
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IntegerLiteral {
     pub token: Token,
     pub value: i64,
@@ -65,10 +63,11 @@ impl Node for IntegerLiteral {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpressionVariants {
     Ident(Identifier),
     Integer(IntegerLiteral),
+    Prefix(PrefixExpression),
 }
 
 impl Node for ExpressionVariants {
@@ -80,30 +79,12 @@ impl Node for ExpressionVariants {
         match self {
             ExpressionVariants::Ident(ident) => ident.string(),
             ExpressionVariants::Integer(int_lit) => int_lit.string(),
+            ExpressionVariants::Prefix(pe) => pe.string(),
         }
     }
 }
 
 pub type ExpressionVariant = Option<ExpressionVariants>;
-
-/*
-impl Expression for ExpressionVariant {
-    fn expression_node(&self) {
-        todo!()
-    }
-}
-*/
-
-// Expressions are node.
-impl Node for dyn Expression {
-    fn token_literal(&self) -> String {
-        todo!()
-    }
-
-    fn string(&self) -> String {
-        todo!()
-    }
-}
 
 #[derive(Debug)]
 pub struct Program {
@@ -131,7 +112,7 @@ impl Node for Program {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Identifier {
     pub token: Token,
     pub value: String,
@@ -246,4 +227,32 @@ impl Statement for ExpressionStatement {
     fn statement_node(&self) {
         todo!()
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct PrefixExpression {
+    pub token: Token,
+    pub operator: String,
+    pub right: Box<ExpressionVariants>, //?
+}
+
+impl Node for PrefixExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        let mut out = String::from("");
+
+        out.push('(');
+        out.push_str(&self.operator);
+        out.push_str(&self.right.string());
+        out.push(')');
+
+        out
+    }
+}
+
+impl Expression for PrefixExpression {
+    fn expression_node(&self) {}
 }
