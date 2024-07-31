@@ -1,9 +1,9 @@
-use std::{collections::HashMap, fmt::format};
+use std::collections::HashMap;
 
 use crate::{
     ast::{
-        ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier, IntegerLiteral,
-        LetStatement, PrefixExpression, Program, ReturnStatement, StatementVariant,
+        ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier, InfixExpression,
+        IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, StatementVariant,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -37,6 +37,17 @@ impl Parser {
         parser.register_prefix(TokenType::INT, Parser::parse_integer_literal);
         parser.register_prefix(TokenType::BANG, Parser::parse_prefix_expression);
         parser.register_prefix(TokenType::MINUS, Parser::parse_prefix_expression);
+
+        // Register infix parse functions
+        parser.register_infix(TokenType::PLUS, Parser::parse_infix_expression);
+        parser.register_infix(TokenType::MINUS, Parser::parse_infix_expression);
+        parser.register_infix(TokenType::SLASH, Parser::parse_infix_expression);
+        parser.register_infix(TokenType::ASTERISK, Parser::parse_infix_expression);
+        parser.register_infix(TokenType::EQ, Parser::parse_infix_expression);
+        parser.register_infix(TokenType::NEQ, Parser::parse_infix_expression);
+        parser.register_infix(TokenType::LT, Parser::parse_infix_expression);
+        parser.register_infix(TokenType::GT, Parser::parse_infix_expression);
+
         parser
     }
 
@@ -68,13 +79,6 @@ impl Parser {
         while !self.current_token_is(TokenType::EOF) {
             let statement = self.parse_statement();
 
-            /*
-            match statement {
-                Some(s) => program.statements.push(s),
-                None => {}
-            }
-            */
-
             if let Some(statement_variant) = statement {
                 program.statements.push(statement_variant);
             }
@@ -101,7 +105,7 @@ impl Parser {
             expression: None,
         };
 
-        statement.expression = self.parse_expression(Precedence::LOWEST);
+        statement.expression = self.parse_expression(Precedence::LOWEST.index());
 
         if self.peek_token_is(TokenType::SEMICOLON) {
             self.next_token();
@@ -117,17 +121,50 @@ impl Parser {
         ));
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> Option<ExpressionVariants> {
+    fn parse_expression(&mut self, precedence: usize) -> Option<ExpressionVariants> {
         if !self.prefix_parse_fns.contains_key(&self.current_token.typ) {
             self.no_prefix_parse_fn_error(self.current_token.typ);
-            None
+            return None;
         } else {
-            self.prefix_parse_fns[&self.current_token.typ](self)
+            let mut left_exp = self.prefix_parse_fns[&self.current_token.typ](self);
+
+            while !self.peek_token_is(TokenType::SEMICOLON) && precedence < self.peek_preference() {
+                if !self.infix_parse_fns.contains_key(&self.peek_token.typ) {
+                    return left_exp;
+                } else {
+                    let infix = self.infix_parse_fns[&self.peek_token.typ];
+                    self.next_token();
+                    left_exp = infix(self, left_exp?);
+                }
+            }
+
+            left_exp
         }
     }
 
+    fn parse_infix_expression(&mut self, left: ExpressionVariants) -> Option<ExpressionVariants> {
+        let mut expression = InfixExpression {
+            token: self.current_token.clone(),
+            operator: self.current_token.literal.clone(),
+            left: Box::new(left),
+            right: Box::new(ExpressionVariants::Ident(Identifier {
+                token: Token::new(TokenType::ASTERISK, ';'),
+                value: "none".to_string(),
+            })),
+        };
+
+        let precedence = self.current_precedence();
+
+        self.next_token();
+        if let Some(exp) = self.parse_expression(precedence) {
+            expression.right = Box::new(exp);
+        }
+
+        Some(ExpressionVariants::Infix(expression))
+    }
     fn parse_prefix_expression(&mut self) -> Option<ExpressionVariants> {
         let mut expression = PrefixExpression {
+            // TODO: Refactor using a constructor
             token: self.current_token.clone(),
             operator: self.current_token.literal.clone(),
             right: Box::new(ExpressionVariants::Ident(Identifier {
@@ -139,7 +176,7 @@ impl Parser {
         self.next_token();
 
         //expression.right = self.parse_expression(Precedence::PREFIX);
-        if let Some(ex) = self.parse_expression(Precedence::PREFIX) {
+        if let Some(ex) = self.parse_expression(Precedence::PREFIX.index()) {
             expression.right = Box::new(ex)
         }
         Some(ExpressionVariants::Prefix(expression))
@@ -231,6 +268,22 @@ impl Parser {
         }
     }
 
+    fn peek_preference(&self) -> usize {
+        if let Some(precedence) = precedences().get(&self.peek_token.typ) {
+            precedence.index()
+        } else {
+            Precedence::LOWEST.index()
+        }
+    }
+
+    fn current_precedence(&self) -> usize {
+        if let Some(precedence) = precedences().get(&self.current_token.typ) {
+            precedence.index()
+        } else {
+            Precedence::LOWEST.index()
+        }
+    }
+
     // These methods add entries to the hashmaps
     fn register_prefix(&mut self, token_type: TokenType, function: PrefixParseFn) {
         self.prefix_parse_fns.insert(token_type, function);
@@ -242,10 +295,10 @@ impl Parser {
 }
 
 type PrefixParseFn = fn(&mut Parser) -> ExpressionVariant;
-type InfixParseFn = fn(ExpressionVariant) -> ExpressionVariant;
+type InfixParseFn = fn(&mut Parser, ExpressionVariants) -> ExpressionVariant;
 
-#[derive(Clone, Copy)]
-enum Precedence {
+#[derive(Clone, Copy, Debug)]
+pub enum Precedence {
     LOWEST,
     EQUALS,      // ==
     LESSGREATER, // > OR <
@@ -259,4 +312,17 @@ impl Precedence {
     pub fn index(&self) -> usize {
         *self as usize
     }
+}
+
+pub fn precedences() -> HashMap<TokenType, Precedence> {
+    HashMap::from([
+        (TokenType::EQ, Precedence::EQUALS),
+        (TokenType::NEQ, Precedence::EQUALS),
+        (TokenType::LT, Precedence::LESSGREATER),
+        (TokenType::GT, Precedence::LESSGREATER),
+        (TokenType::PLUS, Precedence::SUM),
+        (TokenType::MINUS, Precedence::SUM),
+        (TokenType::SLASH, Precedence::PRODUCT),
+        (TokenType::ASTERISK, Precedence::PRODUCT),
+    ])
 }

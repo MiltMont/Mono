@@ -68,6 +68,7 @@ pub enum ExpressionVariants {
     Ident(Identifier),
     Integer(IntegerLiteral),
     Prefix(PrefixExpression),
+    Infix(InfixExpression),
 }
 
 impl Node for ExpressionVariants {
@@ -80,6 +81,7 @@ impl Node for ExpressionVariants {
             ExpressionVariants::Ident(ident) => ident.string(),
             ExpressionVariants::Integer(int_lit) => int_lit.string(),
             ExpressionVariants::Prefix(pe) => pe.string(),
+            ExpressionVariants::Infix(ie) => ie.string(),
         }
     }
 }
@@ -242,17 +244,37 @@ impl Node for PrefixExpression {
     }
 
     fn string(&self) -> String {
-        let mut out = String::from("");
-
-        out.push('(');
-        out.push_str(&self.operator);
-        out.push_str(&self.right.string());
-        out.push(')');
-
-        out
+        format!("({}{})", self.operator, self.right.string())
     }
 }
 
 impl Expression for PrefixExpression {
+    fn expression_node(&self) {}
+}
+
+#[derive(Debug, Clone)]
+pub struct InfixExpression {
+    pub token: Token,
+    pub left: Box<ExpressionVariants>,
+    pub operator: String,
+    pub right: Box<ExpressionVariants>,
+}
+
+impl Node for InfixExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        format!(
+            "({} {} {})",
+            self.left.string(),
+            self.operator,
+            self.right.string()
+        )
+    }
+}
+
+impl Expression for InfixExpression {
     fn expression_node(&self) {}
 }

@@ -4,7 +4,7 @@ mod tests {
     use core::panic;
 
     use mono::{
-        ast::{ExpressionVariants, Node, Program, StatementVariant},
+        ast::{ExpressionVariants, Node, StatementVariant},
         lexer::Lexer,
         parser::Parser,
     };
@@ -255,7 +255,7 @@ mod tests {
         for test in tests {
             let lexer = Lexer::new(test.input);
             let mut parser = Parser::new(lexer);
-            let program = parser.parse_program();
+            let program: mono::ast::Program = parser.parse_program();
 
             check_parser_errors(parser);
 
@@ -316,5 +316,83 @@ mod tests {
             );
         }
         true
+    }
+
+    struct InfixTest {
+        input: String,
+        left_value: i64,
+        operator: String,
+        right_value: i64,
+    }
+
+    impl InfixTest {
+        fn new(input: &str, left_value: i64, operator: &str, right_value: i64) -> Self {
+            Self {
+                input: input.to_string(),
+                left_value,
+                operator: operator.to_string(),
+                right_value,
+            }
+        }
+    }
+
+    #[test]
+
+    fn test_parsing_infix_expressions() {
+        let tests: Vec<InfixTest> = vec![
+            InfixTest::new("5+5;", 5, "+", 5),
+            InfixTest::new("5-5;", 5, "-", 5),
+            InfixTest::new("5*5;", 5, "*", 5),
+            InfixTest::new("5/5;", 5, "/", 5),
+            InfixTest::new("5>5;", 5, ">", 5),
+            InfixTest::new("5<5;", 5, "<", 5),
+            InfixTest::new("5 == 5;", 5, "==", 5),
+            InfixTest::new("5 != 5;", 5, "!=", 5),
+        ];
+
+        for test in tests {
+            let lexer = Lexer::new(test.input);
+            let mut parser = Parser::new(lexer);
+            let program: mono::ast::Program = parser.parse_program();
+
+            check_parser_errors(parser);
+
+            if program.statements.len() != 1 {
+                panic!(
+                    "Program has not enough statements: {}",
+                    program.statements.len()
+                );
+            }
+
+            if let StatementVariant::Expression(expr_stmt) = &program.statements[0] {
+                if let Some(exp_var) = &expr_stmt.expression {
+                    if let ExpressionVariants::Infix(inf_exp) = exp_var {
+                        if !test_integer_literal(*inf_exp.left.clone(), test.left_value) {
+                            return;
+                        }
+
+                        if inf_exp.operator != test.operator {
+                            panic!(
+                                "inf_exp.operator is not {:?}, got {:?}",
+                                test.operator, inf_exp.operator
+                            );
+                        }
+
+                        if !test_integer_literal(*inf_exp.right.clone(), test.right_value) {
+                            return;
+                        }
+                    } else {
+                        panic!("exp_var is not an InfixExpression, got {:?}", exp_var);
+                    }
+                } else {
+                    panic!("No expression!, got {:?}", &expr_stmt.expression);
+                }
+            } else {
+                panic!(
+                    "program.statements[0] is not an ExpressionStatement. Got {:?}",
+                    program.statements[0],
+                );
+            }
+        }
     }
 }
