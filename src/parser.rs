@@ -83,7 +83,6 @@ impl Parser {
                 program.statements.push(statement_variant);
             }
 
-            //program.statements.push(statement);
             self.next_token();
         }
 

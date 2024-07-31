@@ -36,9 +36,8 @@ mod tests {
         };
 
         10 == 10;
-        10 != 9;
-        "
-        .to_string();
+        10 != 9"
+            .to_string();
 
         let tests: Vec<TestType> = vec![
             TestType::new(TokenType::LET, "let"),
@@ -99,7 +98,6 @@ mod tests {
             TestType::new(TokenType::INT, "10"),
             TestType::new(TokenType::NEQ, "!="),
             TestType::new(TokenType::INT, "9"),
-            TestType::new(TokenType::SEMICOLON, ";"),
             TestType::new(TokenType::EOF, " "),
         ];
 

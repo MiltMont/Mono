@@ -130,9 +130,3 @@ impl Lexer {
 fn is_letter(ch: char) -> bool {
     ch.is_alphabetic() || ch == '_'
 }
-
-/*
-fn is_digit(ch: char) -> bool {
-    ch.is_numeric()
-}
-*/

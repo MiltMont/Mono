@@ -4,7 +4,7 @@ mod tests {
     use core::panic;
 
     use mono::{
-        ast::{ExpressionVariants, Node, StatementVariant},
+        ast::{ExpressionVariants, Node, Program, StatementVariant},
         lexer::Lexer,
         parser::Parser,
     };
@@ -392,6 +392,48 @@ mod tests {
                     "program.statements[0] is not an ExpressionStatement. Got {:?}",
                     program.statements[0],
                 );
+            }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    struct OpPrecedenceTest {
+        input: String,
+        expected: String,
+    }
+
+    impl OpPrecedenceTest {
+        fn new(input: &str, expected: &str) -> Self {
+            Self {
+                input: input.to_string(),
+                expected: expected.to_string(),
+            }
+        }
+    }
+    #[test]
+    fn test_operator_precedence_parsing() {
+        let tests: Vec<OpPrecedenceTest> = vec![
+            OpPrecedenceTest::new("-a * b", "((-a) * b)"),
+            OpPrecedenceTest::new("a + b + c", "((a + b) + c)"),
+            OpPrecedenceTest::new("a * b * c", "((a * b) * c)"),
+            OpPrecedenceTest::new("a * b / c", "((a * b) / c)"),
+            OpPrecedenceTest::new("a + b / c", "(a + (b / c))"),
+            OpPrecedenceTest::new("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+            OpPrecedenceTest::new("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+            OpPrecedenceTest::new("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+        ];
+
+        for test in tests {
+            let lexer = Lexer::new(test.input);
+            let mut parser = Parser::new(lexer);
+            dbg!("Current test: {}", test.expected.clone());
+            let program: Program = parser.parse_program();
+
+            check_parser_errors(parser);
+
+            let actual = program.string();
+            if actual != test.expected {
+                panic!("Expected {}, got {}", test.expected, actual);
             }
         }
     }
