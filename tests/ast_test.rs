@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use mono::{
-        ast::{Identifier, LetStatement, Node, Program, StatementVariant},
+        ast::{ExpressionVariants, Identifier, LetStatement, Node, Program, StatementVariant},
         token::{Token, TokenType},
     };
 
@@ -20,13 +20,13 @@ mod tests {
                     },
                     value: "myVar".to_string(),
                 },
-                value: Some(Identifier {
+                value: Some(ExpressionVariants::Ident(Identifier {
                     token: Token {
                         typ: TokenType::IDENT,
                         literal: "anotherVar".to_string(),
                     },
                     value: "anotherVar".to_string(),
-                }),
+                })),
             })],
         };
 

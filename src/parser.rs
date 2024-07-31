@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::{
     ast::{
-        ExpressionStatement, ExpressionVariant, Identifier, LetStatement, Program, ReturnStatement,
-        StatementVariant,
+        Expression, ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier,
+        IntegerLiteral, LetStatement, Program, ReturnStatement, StatementVariant,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -34,15 +34,15 @@ impl Parser {
         parser.next_token();
 
         parser.register_prefix(TokenType::IDENT, Parser::parse_identifier);
-
+        parser.register_prefix(TokenType::INT, Parser::parse_integer_literal);
         parser
     }
 
-    fn parse_identifier(&self) -> Option<Identifier> {
-        Some(Identifier {
+    fn parse_identifier(&self) -> Option<ExpressionVariants> {
+        Some(ExpressionVariants::Ident(Identifier {
             token: self.current_token.clone(),
             value: self.current_token.literal.clone(),
-        })
+        }))
     }
 
     pub fn errors(&self) -> Vec<String> {
@@ -101,7 +101,7 @@ impl Parser {
         Some(StatementVariant::Expression(statement))
     }
 
-    fn parse_expression(&self, precedence: Precedence) -> Option<Identifier> {
+    fn parse_expression(&self, precedence: Precedence) -> Option<ExpressionVariants> {
         if !self.prefix_parse_fns.contains_key(&self.current_token.typ) {
             None
         } else {
@@ -155,6 +155,21 @@ impl Parser {
         }
 
         Some(StatementVariant::Let(statement))
+    }
+
+    fn parse_integer_literal(&self) -> Option<ExpressionVariants> {
+        let mut literal = IntegerLiteral {
+            token: self.current_token.clone(),
+            value: 0,
+        };
+
+        // Parse the string as an integer
+        // Handle parsing error instead of default to 0!
+        let value = self.current_token.literal.parse::<i64>().unwrap_or(0);
+
+        literal.value = value;
+
+        Some(ExpressionVariants::Integer(literal))
     }
 
     fn next_token(&mut self) {

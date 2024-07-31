@@ -4,7 +4,7 @@ mod tests {
     use core::panic;
 
     use mono::{
-        ast::{Node, StatementVariant},
+        ast::{ExpressionVariant, ExpressionVariants, Node, StatementVariant},
         lexer::Lexer,
         parser::Parser,
     };
@@ -162,24 +162,87 @@ mod tests {
 
         match &program.statements[0] {
             StatementVariant::Expression(exp) => match &exp.expression {
-                Some(ident) => {
-                    if ident.value != "foobar" {
-                        panic!("ident.value not foobar, got {}", ident.value);
-                    }
+                Some(identifier) => match identifier {
+                    mono::ast::ExpressionVariants::Ident(identifier) => {
+                        if identifier.value != "foobar" {
+                            panic!("ident.value not foobar, got {}", identifier.value);
+                        }
 
-                    if ident.token_literal() != "foobar" {
-                        panic!(
-                            "ident.token_literal() not foobar, got {}",
-                            ident.token_literal()
-                        )
+                        if identifier.token_literal() != "foobar" {
+                            panic!(
+                                "ident.token_literal() not foobar, got {}",
+                                identifier.token_literal()
+                            )
+                        }
                     }
-                }
+                    mono::ast::ExpressionVariants::Integer(_) => {}
+                },
                 None => panic!("exp is not Identifier, got {:?}", exp.expression),
             },
             _ => {
                 panic!(
                     "program.statements[0] is not an ExpressionStatement, got {:?}",
                     program.statements[0]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_integer_literal_expression() {
+        let input = "5;".to_string();
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        check_parser_errors(parser);
+
+        if program.statements.len() != 1 {
+            panic!(
+                "Program has not enough statements: {}",
+                program.statements.len()
+            );
+        }
+
+        /*
+        match program.statements[0] {
+            StatementVariant::Expression(statement ) => {
+                statement.expression
+            },
+            _ => {
+                panic!(
+                    "program.statements[0] is not an ExpressionStatement. Got {:?}",
+                    program.statements[0],
+                );
+            }
+        }
+        */
+
+        match &program.statements[0] {
+            StatementVariant::Expression(exp_stmt) => match &exp_stmt.expression {
+                Some(exp_var) => match exp_var {
+                    ExpressionVariants::Integer(int_lit) => {
+                        if int_lit.value != 5 {
+                            panic!("Literal value not 5, got {}", int_lit.value);
+                        }
+
+                        if int_lit.token_literal() != "5" {
+                            panic!(
+                                "int_lit.token_literal not 5, got {}",
+                                int_lit.token_literal()
+                            );
+                        }
+                    }
+                    _ => panic!("Expression is not IntegerLiteral, got {:?}", exp_var),
+                },
+                None => {
+                    panic!("NO expression!, got {:?}", &exp_stmt.expression);
+                }
+            },
+            _ => {
+                panic!(
+                    "program.statements[0] is not an ExpressionStatement. Got {:?}",
+                    program.statements[0],
                 );
             }
         }

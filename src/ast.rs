@@ -41,7 +41,50 @@ pub trait Expression {
     fn expression_node(&self);
 }
 
-pub type ExpressionVariant = Option<Identifier>;
+// Trying to use traits
+
+#[derive(Debug)]
+pub struct IntegerLiteral {
+    pub token: Token,
+    pub value: i64,
+}
+
+impl Expression for IntegerLiteral {
+    fn expression_node(&self) {
+        todo!()
+    }
+}
+
+impl Node for IntegerLiteral {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        self.token_literal()
+    }
+}
+
+#[derive(Debug)]
+pub enum ExpressionVariants {
+    Ident(Identifier),
+    Integer(IntegerLiteral),
+}
+
+impl Node for ExpressionVariants {
+    fn token_literal(&self) -> String {
+        todo!()
+    }
+
+    fn string(&self) -> String {
+        match self {
+            ExpressionVariants::Ident(ident) => ident.string(),
+            ExpressionVariants::Integer(int_lit) => int_lit.string(),
+        }
+    }
+}
+
+pub type ExpressionVariant = Option<ExpressionVariants>;
 
 /*
 impl Expression for ExpressionVariant {
@@ -135,7 +178,10 @@ impl Node for LetStatement {
         out.push_str(" = ");
 
         match &self.value {
-            Some(ident) => out.push_str(&ident.string()),
+            Some(expr_var) => match expr_var {
+                ExpressionVariants::Ident(ident) => out.push_str(&ident.string()),
+                ExpressionVariants::Integer(_) => {}
+            },
             None => (),
         }
 
@@ -168,11 +214,19 @@ impl Node for ReturnStatement {
         out.push_str(&self.token_literal());
         out.push_str(" ");
 
+        /*
         match &self.return_value {
             Some(ident) => out.push_str(&ident.string()),
             None => (),
         }
-
+        */
+        match &self.return_value {
+            Some(expr_var) => match expr_var {
+                ExpressionVariants::Ident(ident) => out.push_str(&ident.string()),
+                ExpressionVariants::Integer(_) => todo!(),
+            },
+            _ => (),
+        }
         out.push(';');
 
         out
