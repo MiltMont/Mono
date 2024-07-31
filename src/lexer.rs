@@ -22,7 +22,7 @@ impl Lexer {
 
     pub fn read_char(&mut self) {
         if self.read_position >= self.input.len() {
-            self.ch = '0';
+            self.ch = '\0';
         } else {
             self.ch = self.input.as_bytes()[self.read_position] as char;
         }
@@ -74,13 +74,13 @@ impl Lexer {
             '>' => token = Token::new(TokenType::GT, self.ch),
             '{' => token = Token::new(TokenType::LBRACE, self.ch),
             '}' => token = Token::new(TokenType::RBRACE, self.ch),
-            '0' => token = Token::new(TokenType::EOF, ' '),
+            '\0' => token = Token::new(TokenType::EOF, ' '),
             _ => {
                 if is_letter(self.ch) {
                     token.literal = self.read_identifier();
                     token.typ = TokenType::serialize(&token.literal);
                     return token;
-                } else if self.is_digit(self.ch) {
+                } else if is_digit(self.ch) {
                     token.literal = self.read_number();
                     token.typ = TokenType::INT;
                     return token;
@@ -96,8 +96,7 @@ impl Lexer {
     fn read_number(&mut self) -> String {
         let position = self.position;
 
-        // EOF is being passed as a number.
-        while self.is_digit(self.ch) {
+        while is_digit(self.ch) {
             self.read_char();
         }
 
@@ -121,12 +120,12 @@ impl Lexer {
             self.input.as_bytes()[self.read_position] as char
         }
     }
-
-    fn is_digit(&self, ch: char) -> bool {
-        ch.is_numeric() && self.position != self.input.len()
-    }
 }
 
 fn is_letter(ch: char) -> bool {
     ch.is_alphabetic() || ch == '_'
+}
+
+fn is_digit(ch: char) -> bool {
+    ch.is_numeric()
 }
