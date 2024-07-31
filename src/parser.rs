@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::{
     ast::{
-        Expression, ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier,
-        IntegerLiteral, LetStatement, Program, ReturnStatement, StatementVariant,
+        ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier, IntegerLiteral,
+        LetStatement, Program, ReturnStatement, StatementVariant,
     },
     lexer::Lexer,
     token::{Token, TokenType},

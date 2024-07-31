@@ -4,7 +4,7 @@ mod tests {
     use core::panic;
 
     use mono::{
-        ast::{ExpressionVariant, ExpressionVariants, Node, StatementVariant},
+        ast::{ExpressionVariants, Node, StatementVariant},
         lexer::Lexer,
         parser::Parser,
     };
@@ -160,31 +160,28 @@ mod tests {
             );
         }
 
-        match &program.statements[0] {
-            StatementVariant::Expression(exp) => match &exp.expression {
-                Some(identifier) => match identifier {
-                    mono::ast::ExpressionVariants::Ident(identifier) => {
-                        if identifier.value != "foobar" {
-                            panic!("ident.value not foobar, got {}", identifier.value);
-                        }
-
-                        if identifier.token_literal() != "foobar" {
-                            panic!(
-                                "ident.token_literal() not foobar, got {}",
-                                identifier.token_literal()
-                            )
-                        }
+        if let StatementVariant::Expression(exp) = &program.statements[0] {
+            if let Some(expr_variant) = &exp.expression {
+                if let ExpressionVariants::Ident(identifier) = expr_variant {
+                    if identifier.value != "foobar" {
+                        panic!("ident.value not foobar, got {}", identifier.value);
                     }
-                    mono::ast::ExpressionVariants::Integer(_) => {}
-                },
-                None => panic!("exp is not Identifier, got {:?}", exp.expression),
-            },
-            _ => {
-                panic!(
-                    "program.statements[0] is not an ExpressionStatement, got {:?}",
-                    program.statements[0]
-                );
+
+                    if identifier.token_literal() != "foobar" {
+                        panic!(
+                            "ident.token_literal() not foobar, got {}",
+                            identifier.token_literal()
+                        )
+                    }
+                }
+            } else {
+                panic!("exp is not Identifier, got {:?}", exp.expression);
             }
+        } else {
+            panic!(
+                "program.statements[0] is not an ExpressionStatement, got {:?}",
+                program.statements[0]
+            );
         }
     }
 
