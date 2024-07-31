@@ -66,10 +66,17 @@ impl Parser {
         while !self.current_token_is(TokenType::EOF) {
             let statement = self.parse_statement();
 
+            /*
             match statement {
                 Some(s) => program.statements.push(s),
                 None => {}
             }
+            */
+
+            if let Some(statement_variant) = statement {
+                program.statements.push(statement_variant);
+            }
+
             //program.statements.push(statement);
             self.next_token();
         }

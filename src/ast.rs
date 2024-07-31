@@ -177,12 +177,10 @@ impl Node for LetStatement {
         out.push_str(&self.name.string());
         out.push_str(" = ");
 
-        match &self.value {
-            Some(expr_var) => match expr_var {
-                ExpressionVariants::Ident(ident) => out.push_str(&ident.string()),
-                ExpressionVariants::Integer(_) => {}
-            },
-            None => (),
+        if let Some(expr_var) = &self.value {
+            if let ExpressionVariants::Ident(ident) = expr_var {
+                out.push_str(&ident.string());
+            }
         }
 
         out.push(';');
@@ -214,18 +212,10 @@ impl Node for ReturnStatement {
         out.push_str(&self.token_literal());
         out.push_str(" ");
 
-        /*
-        match &self.return_value {
-            Some(ident) => out.push_str(&ident.string()),
-            None => (),
-        }
-        */
-        match &self.return_value {
-            Some(expr_var) => match expr_var {
-                ExpressionVariants::Ident(ident) => out.push_str(&ident.string()),
-                ExpressionVariants::Integer(_) => todo!(),
-            },
-            _ => (),
+        if let Some(expr_var) = &self.return_value {
+            if let ExpressionVariants::Ident(ident) = expr_var {
+                out.push_str(&ident.string());
+            }
         }
         out.push(';');
 

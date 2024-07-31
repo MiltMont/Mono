@@ -204,47 +204,30 @@ mod tests {
             );
         }
 
-        /*
-        match program.statements[0] {
-            StatementVariant::Expression(statement ) => {
-                statement.expression
-            },
-            _ => {
-                panic!(
-                    "program.statements[0] is not an ExpressionStatement. Got {:?}",
-                    program.statements[0],
-                );
-            }
-        }
-        */
-
-        match &program.statements[0] {
-            StatementVariant::Expression(exp_stmt) => match &exp_stmt.expression {
-                Some(exp_var) => match exp_var {
-                    ExpressionVariants::Integer(int_lit) => {
-                        if int_lit.value != 5 {
-                            panic!("Literal value not 5, got {}", int_lit.value);
-                        }
-
-                        if int_lit.token_literal() != "5" {
-                            panic!(
-                                "int_lit.token_literal not 5, got {}",
-                                int_lit.token_literal()
-                            );
-                        }
+        if let StatementVariant::Expression(expr_stmt) = &program.statements[0] {
+            if let Some(exp_var) = &expr_stmt.expression {
+                if let ExpressionVariants::Integer(int_lit) = exp_var {
+                    if int_lit.value != 5 {
+                        panic!("Literal value not 5, got {}", int_lit.value);
                     }
-                    _ => panic!("Expression is not IntegerLiteral, got {:?}", exp_var),
-                },
-                None => {
-                    panic!("NO expression!, got {:?}", &exp_stmt.expression);
+
+                    if int_lit.token_literal() != "5" {
+                        panic!(
+                            "int_lit.token_literal not 5, got {}",
+                            int_lit.token_literal()
+                        );
+                    }
+                } else {
+                    panic!("Expression is not IntegerLiteral, got {:?}", exp_var)
                 }
-            },
-            _ => {
-                panic!(
-                    "program.statements[0] is not an ExpressionStatement. Got {:?}",
-                    program.statements[0],
-                );
+            } else {
+                panic!("No expression!, got {:?}", &expr_stmt.expression);
             }
+        } else {
+            panic!(
+                "program.statements[0] is not an ExpressionStatement. Got {:?}",
+                program.statements[0],
+            );
         }
     }
 }
