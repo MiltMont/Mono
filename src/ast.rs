@@ -6,88 +6,6 @@ pub trait Node {
     fn string(&self) -> String;
 }
 
-pub trait Statement: Node {
-    fn statement_node(&self);
-}
-
-// Improve this!
-#[derive(Debug)]
-pub enum StatementVariant {
-    Let(LetStatement),
-    Return(ReturnStatement),
-    Expression(ExpressionStatement),
-}
-
-// Statements are nodes.
-impl Node for StatementVariant {
-    fn token_literal(&self) -> String {
-        match self {
-            StatementVariant::Let(_) => "let".to_string(),
-            StatementVariant::Return(_) => "return".to_string(),
-            StatementVariant::Expression(_) => todo!(),
-        }
-    }
-
-    fn string(&self) -> String {
-        match self {
-            StatementVariant::Let(s) => s.string(),
-            StatementVariant::Return(s) => s.string(),
-            StatementVariant::Expression(s) => s.string(),
-        }
-    }
-}
-
-pub trait Expression: Node {
-    fn expression_node(&self);
-}
-
-#[derive(Debug, Clone)]
-pub struct IntegerLiteral {
-    pub token: Token,
-    pub value: i64,
-}
-
-impl Expression for IntegerLiteral {
-    fn expression_node(&self) {
-        todo!()
-    }
-}
-
-impl Node for IntegerLiteral {
-    fn token_literal(&self) -> String {
-        self.token.literal.clone()
-    }
-
-    fn string(&self) -> String {
-        self.token_literal()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum ExpressionVariants {
-    Ident(Identifier),
-    Integer(IntegerLiteral),
-    Prefix(PrefixExpression),
-    Infix(InfixExpression),
-}
-
-impl Node for ExpressionVariants {
-    fn token_literal(&self) -> String {
-        todo!()
-    }
-
-    fn string(&self) -> String {
-        match self {
-            ExpressionVariants::Ident(ident) => ident.string(),
-            ExpressionVariants::Integer(int_lit) => int_lit.string(),
-            ExpressionVariants::Prefix(pe) => pe.string(),
-            ExpressionVariants::Infix(ie) => ie.string(),
-        }
-    }
-}
-
-pub type ExpressionVariant = Option<ExpressionVariants>;
-
 #[derive(Debug)]
 pub struct Program {
     // This is a vector of objects implementing the Statement trait.
@@ -114,23 +32,36 @@ impl Node for Program {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Identifier {
-    pub token: Token,
-    pub value: String,
+///////////////////////
+// Statements   ///////
+///////////////////////
+pub trait Statement: Node {
+    fn statement_node(&self);
+}
+// TODO: How can I do this better?
+#[derive(Debug)]
+pub enum StatementVariant {
+    Let(LetStatement),
+    Return(ReturnStatement),
+    Expression(ExpressionStatement),
 }
 
-impl Expression for Identifier {
-    fn expression_node(&self) {}
-}
-
-impl Node for Identifier {
+// Statements are nodes.
+impl Node for StatementVariant {
     fn token_literal(&self) -> String {
-        self.token.literal.clone()
+        match self {
+            StatementVariant::Let(_) => "let".to_string(),
+            StatementVariant::Return(_) => "return".to_string(),
+            StatementVariant::Expression(_) => todo!(),
+        }
     }
 
     fn string(&self) -> String {
-        self.value.clone()
+        match self {
+            StatementVariant::Let(s) => s.string(),
+            StatementVariant::Return(s) => s.string(),
+            StatementVariant::Expression(s) => s.string(),
+        }
     }
 }
 
@@ -231,25 +162,12 @@ impl Statement for ExpressionStatement {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct PrefixExpression {
-    pub token: Token,
-    pub operator: String,
-    pub right: Box<ExpressionVariants>, //?
-}
+///////////////////////
+// Expressions  ///////
+///////////////////////
 
-impl Node for PrefixExpression {
-    fn token_literal(&self) -> String {
-        self.token.literal.clone()
-    }
-
-    fn string(&self) -> String {
-        format!("({}{})", self.operator, self.right.string())
-    }
-}
-
-impl Expression for PrefixExpression {
-    fn expression_node(&self) {}
+pub trait Expression: Node {
+    fn expression_node(&self);
 }
 
 #[derive(Debug, Clone)]
@@ -278,3 +196,91 @@ impl Node for InfixExpression {
 impl Expression for InfixExpression {
     fn expression_node(&self) {}
 }
+
+#[derive(Debug, Clone)]
+pub struct PrefixExpression {
+    pub token: Token,
+    pub operator: String,
+    pub right: Box<ExpressionVariants>, //?
+}
+
+impl Node for PrefixExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        format!("({}{})", self.operator, self.right.string())
+    }
+}
+
+impl Expression for PrefixExpression {
+    fn expression_node(&self) {}
+}
+
+#[derive(Debug, Clone)]
+pub struct Identifier {
+    pub token: Token,
+    pub value: String,
+}
+
+impl Expression for Identifier {
+    fn expression_node(&self) {}
+}
+
+impl Node for Identifier {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        self.value.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IntegerLiteral {
+    pub token: Token,
+    pub value: i64,
+}
+
+impl Expression for IntegerLiteral {
+    fn expression_node(&self) {
+        todo!()
+    }
+}
+
+impl Node for IntegerLiteral {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        self.token_literal()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ExpressionVariants {
+    Ident(Identifier),
+    Integer(IntegerLiteral),
+    Prefix(PrefixExpression),
+    Infix(InfixExpression),
+}
+
+impl Node for ExpressionVariants {
+    fn token_literal(&self) -> String {
+        todo!()
+    }
+
+    fn string(&self) -> String {
+        match self {
+            ExpressionVariants::Ident(ident) => ident.string(),
+            ExpressionVariants::Integer(int_lit) => int_lit.string(),
+            ExpressionVariants::Prefix(pe) => pe.string(),
+            ExpressionVariants::Infix(ie) => ie.string(),
+        }
+    }
+}
+
+pub type ExpressionVariant = Option<ExpressionVariants>;

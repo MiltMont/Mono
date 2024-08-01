@@ -33,6 +33,7 @@ impl Parser {
         parser.next_token();
         parser.next_token();
 
+        // Register prefix parse functions
         parser.register_prefix(TokenType::IDENT, Parser::parse_identifier);
         parser.register_prefix(TokenType::INT, Parser::parse_integer_literal);
         parser.register_prefix(TokenType::BANG, Parser::parse_prefix_expression);
@@ -51,24 +52,15 @@ impl Parser {
         parser
     }
 
+    /////////////////////
+    // Parsing functions.
+    /////////////////////
+
     fn parse_identifier(&mut self) -> Option<ExpressionVariants> {
         Some(ExpressionVariants::Ident(Identifier {
             token: self.current_token.clone(),
             value: self.current_token.literal.clone(),
         }))
-    }
-
-    pub fn errors(&self) -> Vec<String> {
-        // This is not optimal...
-        self.errors.clone()
-    }
-
-    fn peek_error(&mut self, token: TokenType) {
-        let message = format!(
-            "Expected next token to be {:?}, got {:?} instead",
-            token, self.peek_token.typ
-        );
-        self.errors.push(message);
     }
 
     pub fn parse_program(&mut self) -> Program {
@@ -113,13 +105,6 @@ impl Parser {
         Some(StatementVariant::Expression(statement))
     }
 
-    fn no_prefix_parse_fn_error(&mut self, token_type: TokenType) {
-        self.errors.push(format!(
-            "No prefix parse function for {:?} found",
-            token_type,
-        ));
-    }
-
     fn parse_expression(&mut self, precedence: usize) -> Option<ExpressionVariants> {
         if !self.prefix_parse_fns.contains_key(&self.current_token.typ) {
             self.no_prefix_parse_fn_error(self.current_token.typ);
@@ -142,6 +127,7 @@ impl Parser {
     }
 
     fn parse_infix_expression(&mut self, left: ExpressionVariants) -> Option<ExpressionVariants> {
+        // TODO: Fix this, its ugly.
         let mut expression = InfixExpression {
             token: self.current_token.clone(),
             operator: self.current_token.literal.clone(),
@@ -161,6 +147,7 @@ impl Parser {
 
         Some(ExpressionVariants::Infix(expression))
     }
+
     fn parse_prefix_expression(&mut self) -> Option<ExpressionVariants> {
         let mut expression = PrefixExpression {
             // TODO: Refactor using a constructor
@@ -244,6 +231,34 @@ impl Parser {
         Some(ExpressionVariants::Integer(literal))
     }
 
+    /////////////////////
+    // Error functions.
+    /////////////////////
+
+    pub fn errors(&self) -> Vec<String> {
+        //TODO: This is not optimal...
+        self.errors.clone()
+    }
+
+    fn peek_error(&mut self, token: TokenType) {
+        let message = format!(
+            "Expected next token to be {:?}, got {:?} instead",
+            token, self.peek_token.typ
+        );
+        self.errors.push(message);
+    }
+
+    fn no_prefix_parse_fn_error(&mut self, token_type: TokenType) {
+        self.errors.push(format!(
+            "No prefix parse function for {:?} found",
+            token_type,
+        ));
+    }
+
+    //////////////////////
+    // Utility functions.
+    //////////////////////
+
     fn next_token(&mut self) {
         self.current_token = self.peek_token.clone();
         self.peek_token = self.lexer.next_token();
@@ -283,7 +298,10 @@ impl Parser {
         }
     }
 
+    /////////////////////////////////////////////
     // These methods add entries to the hashmaps
+    /////////////////////////////////////////////
+
     fn register_prefix(&mut self, token_type: TokenType, function: PrefixParseFn) {
         self.prefix_parse_fns.insert(token_type, function);
     }
