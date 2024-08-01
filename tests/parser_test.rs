@@ -30,7 +30,7 @@ mod tests {
             "
         .to_string();
 
-        let lexer = Lexer::new(input);
+        let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
 
         let program = parser.parse_program();
@@ -114,7 +114,7 @@ mod tests {
         "
         .to_string();
 
-        let lexer = Lexer::new(input);
+        let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
 
         let program = parser.parse_program();
@@ -148,7 +148,7 @@ mod tests {
     fn test_identifier_expressions() {
         let input = "foobar;".to_string();
 
-        let lexer = Lexer::new(input);
+        let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
         check_parser_errors(parser);
@@ -189,7 +189,7 @@ mod tests {
     fn test_integer_literal_expression() {
         let input = "5;".to_string();
 
-        let lexer = Lexer::new(input);
+        let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
         check_parser_errors(parser);
@@ -253,7 +253,7 @@ mod tests {
         ];
 
         for test in tests {
-            let lexer = Lexer::new(test.input);
+            let lexer = Lexer::new(&test.input);
             let mut parser = Parser::new(lexer);
             let program: mono::ast::Program = parser.parse_program();
 
@@ -351,7 +351,7 @@ mod tests {
         ];
 
         for test in tests {
-            let lexer = Lexer::new(test.input);
+            let lexer = Lexer::new(&test.input);
             let mut parser = Parser::new(lexer);
             let program: mono::ast::Program = parser.parse_program();
 
@@ -424,7 +424,7 @@ mod tests {
         ];
 
         for test in tests {
-            let lexer = Lexer::new(test.input);
+            let lexer = Lexer::new(&test.input);
             let mut parser = Parser::new(lexer);
             dbg!("Current test: {}", test.expected.clone());
             let program: Program = parser.parse_program();

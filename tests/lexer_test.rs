@@ -101,7 +101,7 @@ mod tests {
             TestType::new(TokenType::EOF, " "),
         ];
 
-        let mut lexer = Lexer::new(input);
+        let mut lexer = Lexer::new(&input);
 
         for test in tests {
             let token = lexer.next_token();
