@@ -1,9 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, os::linux::raw::stat};
 
 use crate::{
     ast::{
-        ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier, InfixExpression,
-        IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, StatementVariant,
+        Boolean, ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier,
+        InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement,
+        StatementVariant,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -38,6 +39,9 @@ impl Parser {
         parser.register_prefix(TokenType::INT, Parser::parse_integer_literal);
         parser.register_prefix(TokenType::BANG, Parser::parse_prefix_expression);
         parser.register_prefix(TokenType::MINUS, Parser::parse_prefix_expression);
+        // Boolean parse functions
+        parser.register_prefix(TokenType::TRUE, Parser::parse_boolean);
+        parser.register_prefix(TokenType::FALSE, Parser::parse_boolean);
 
         // Register infix parse functions
         parser.register_infix(TokenType::PLUS, Parser::parse_infix_expression);
@@ -55,6 +59,13 @@ impl Parser {
     /////////////////////
     // Parsing functions.
     /////////////////////
+
+    fn parse_boolean(&mut self) -> Option<ExpressionVariants> {
+        Some(ExpressionVariants::Boolean(Boolean {
+            token: self.current_token.clone(),
+            value: self.current_token_is(TokenType::TRUE),
+        }))
+    }
 
     fn parse_identifier(&mut self) -> Option<ExpressionVariants> {
         Some(ExpressionVariants::Ident(Identifier {
@@ -189,7 +200,7 @@ impl Parser {
             token: self.current_token.clone(),
             name: Identifier {
                 token: self.current_token.clone(),
-                value: self.current_token.literal.clone(),
+                value: String::new(),
             },
             value: None,
         };
@@ -206,6 +217,12 @@ impl Parser {
         if !self.expect_peek(TokenType::ASSIGN) {
             return None;
         }
+
+        self.next_token();
+
+        // Current token is now <expr> in
+        // let <ident> = <expr>
+        statement.value = self.parse_expression(Precedence::LOWEST.index());
 
         // We are skipping the expressions
         // until we encounter a semicolon
@@ -224,11 +241,19 @@ impl Parser {
 
         // Parse the string as an integer
         // Handle parsing error instead of default to 0!
-        let value = self.current_token.literal.parse::<i64>().unwrap_or(0);
+        let value = self.current_token.literal.parse::<i64>();
 
-        literal.value = value;
+        match value {
+            Ok(v) => {
+                literal.value = v;
 
-        Some(ExpressionVariants::Integer(literal))
+                return Some(ExpressionVariants::Integer(literal));
+            }
+            Err(e) => {
+                eprintln!("Parse error: {}, found {}", e, self.current_token.literal);
+                return None;
+            }
+        }
     }
 
     /////////////////////

@@ -86,10 +86,11 @@ impl Node for LetStatement {
     fn string(&self) -> String {
         let mut out = String::from("");
 
-        out.push_str(&self.token_literal());
-        out.push(' ');
-        out.push_str(&self.name.string());
-        out.push_str(" = ");
+        out.push_str(&format!(
+            "{} {} = ",
+            &self.token_literal(),
+            &self.name.string()
+        ));
 
         if let Some(expr_var) = &self.value {
             if let ExpressionVariants::Ident(ident) = expr_var {
@@ -123,8 +124,7 @@ impl Node for ReturnStatement {
     fn string(&self) -> String {
         let mut out = String::from("");
 
-        out.push_str(&self.token_literal());
-        out.push_str(" ");
+        out.push_str(&format!("{} ", &self.token_literal()));
 
         if let Some(expr_var) = &self.return_value {
             if let ExpressionVariants::Ident(ident) = expr_var {
@@ -261,11 +261,34 @@ impl Node for IntegerLiteral {
 }
 
 #[derive(Debug, Clone)]
+pub struct Boolean {
+    pub token: Token,
+    pub value: bool,
+}
+
+impl Expression for Boolean {
+    fn expression_node(&self) {
+        todo!()
+    }
+}
+
+impl Node for Boolean {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        self.token.literal.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum ExpressionVariants {
     Ident(Identifier),
     Integer(IntegerLiteral),
     Prefix(PrefixExpression),
     Infix(InfixExpression),
+    Boolean(Boolean),
 }
 
 impl Node for ExpressionVariants {
@@ -279,6 +302,7 @@ impl Node for ExpressionVariants {
             ExpressionVariants::Integer(int_lit) => int_lit.string(),
             ExpressionVariants::Prefix(pe) => pe.string(),
             ExpressionVariants::Infix(ie) => ie.string(),
+            ExpressionVariants::Boolean(b) => b.string(),
         }
     }
 }

@@ -2,6 +2,7 @@
 mod tests {
 
     use core::panic;
+    use std::vec;
 
     use mono::{
         ast::{ExpressionVariants, Node, Program, StatementVariant},
@@ -9,59 +10,79 @@ mod tests {
         parser::Parser,
     };
 
-    struct TestType {
-        expected_identifier: String,
-    }
+    fn create_parse_program(input: &str) -> Program {
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
 
-    impl TestType {
-        fn new(expected_identifier: &str) -> Self {
-            Self {
-                expected_identifier: expected_identifier.to_string(),
-            }
-        }
+        check_parser_errors(parser);
+
+        program
     }
 
     #[test]
     fn test_let_statements() {
-        let input = "
-    let x = 5;
-    let y = 10;
-    let testing = 234;
-            "
-        .to_string();
-
-        let lexer = Lexer::new(&input);
-        let mut parser = Parser::new(lexer);
-
-        let program = parser.parse_program();
-        check_parser_errors(parser);
-
-        if program.statements.len() == 0 {
-            panic!("parse_program returned an empty vector.")
-        }
-        if program.statements.len() != 3 {
-            panic!(
-                "program.statements does not contain 3 statements. Got {}",
-                program.statements.len()
-            )
+        #[derive(Debug)]
+        struct Test {
+            input: String,
+            expected_identifier: String,
+            expected_value: Expected,
         }
 
-        let tests: Vec<TestType> = vec![
-            TestType::new("x"),
-            TestType::new("y"),
-            TestType::new("testing"),
+        impl Test {
+            fn new(input: &str, expected_identifier: &str, expected_value: Expected) -> Self {
+                Self {
+                    input: input.to_string(),
+                    expected_identifier: expected_identifier.to_string(),
+                    expected_value: expected_value,
+                }
+            }
+        }
+
+        let tests: Vec<Test> = vec![
+            Test::new("let x = 5;", "x", Expected::Int(5)),
+            Test::new("let y = 4;", "y", Expected::Int(4)),
+            Test::new(
+                "let foobar = y;",
+                "foobar",
+                Expected::String(String::from("y")),
+            ),
+            Test::new("let boolean = true;", "boolean", Expected::Boolean(true)),
+            Test::new("let barfoo = false;", "barfoo", Expected::Boolean(false)),
         ];
 
-        for (idx, test) in tests.iter().enumerate() {
-            let statement = &program.statements[idx];
+        for test in tests.iter() {
+            let program = create_parse_program(&test.input);
 
-            if !test_let_statement(statement, test.expected_identifier.clone()) {
-                break;
+            if program.statements.len() != 1 {
+                panic!(
+                    "program.statements does not contain 1 statement. Got {}",
+                    program.statements.len()
+                );
+            }
+
+            let statement = &program.statements[0];
+
+            if !test_let_statement(statement, &test.expected_identifier) {
+                return;
+            }
+
+            if let StatementVariant::Let(let_stmt) = statement {
+                if let Some(exp_var) = &let_stmt.value {
+                    if !test_literal_expression(exp_var.clone(), test.expected_value.clone()) {
+                        panic!();
+                    }
+                } else {
+                    panic!(
+                        "NO EXPRESSION FOUND AT {:?}, coming from {:?}",
+                        let_stmt, &test
+                    );
+                }
             }
         }
     }
 
-    fn test_let_statement(statement: &StatementVariant, name: String) -> bool {
+    fn test_let_statement(statement: &StatementVariant, name: &str) -> bool {
         if statement.token_literal() != "let" {
             println!("Token literal not eq, got {}", statement.token_literal());
             return false;
@@ -85,7 +106,15 @@ mod tests {
             }
             _ => {}
         }
-
+        if let StatementVariant::Let(let_statement) = statement {
+            if let_statement.name.value != name {
+                eprintln!(
+                    "let_statement.name is not {}, got {}",
+                    name, let_statement.name.value
+                );
+                return false;
+            }
+        }
         true
     }
 
@@ -111,14 +140,9 @@ mod tests {
             return 5;
             return 10;
             return 15;
-        "
-        .to_string();
+        ";
 
-        let lexer = Lexer::new(&input);
-        let mut parser = Parser::new(lexer);
-
-        let program = parser.parse_program();
-        check_parser_errors(parser);
+        let program = create_parse_program(input);
 
         if program.statements.len() != 3 {
             panic!(
@@ -146,12 +170,9 @@ mod tests {
 
     #[test]
     fn test_identifier_expressions() {
-        let input = "foobar;".to_string();
+        let input = "foobar;";
 
-        let lexer = Lexer::new(&input);
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
-        check_parser_errors(parser);
+        let program = create_parse_program(input);
 
         if program.statements.len() != 1 {
             panic!(
@@ -186,13 +207,52 @@ mod tests {
     }
 
     #[test]
-    fn test_integer_literal_expression() {
-        let input = "5;".to_string();
+    fn test_boolean_expression() {
+        struct Test {
+            input: String,
+            expected_boolean_value: bool,
+        }
 
-        let lexer = Lexer::new(&input);
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
-        check_parser_errors(parser);
+        let tests: Vec<Test> = vec![
+            Test {
+                input: String::from("true;"),
+                expected_boolean_value: true,
+            },
+            Test {
+                input: String::from("false;"),
+                expected_boolean_value: false,
+            },
+        ];
+
+        for test in tests {
+            let program = create_parse_program(&test.input);
+
+            if program.statements.len() != 1 {
+                panic!(
+                    "
+                    Program does not contain 1 statement, got {}",
+                    program.statements.len()
+                );
+            }
+
+            for statement in program.statements {
+                if let StatementVariant::Expression(exp) = statement {
+                    if let Some(expression_variant) = &exp.expression {
+                        if let ExpressionVariants::Boolean(boolean) = expression_variant {
+                            if boolean.value != test.expected_boolean_value {
+                                panic!("boolean.value is not true, got {}", boolean.value);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #[test]
+    fn test_integer_literal_expression() {
+        let input = "5;";
+
+        let program = create_parse_program(input);
 
         if program.statements.len() != 1 {
             panic!(
@@ -253,11 +313,7 @@ mod tests {
         ];
 
         for test in tests {
-            let lexer = Lexer::new(&test.input);
-            let mut parser = Parser::new(lexer);
-            let program: mono::ast::Program = parser.parse_program();
-
-            check_parser_errors(parser);
+            let program = create_parse_program(&test.input);
 
             if program.statements.len() != 1 {
                 panic!(
@@ -294,15 +350,38 @@ mod tests {
         }
     }
 
+    fn test_identifier(expression: ExpressionVariants, value: &str) -> bool {
+        if let ExpressionVariants::Ident(identifier) = expression {
+            if identifier.value != value {
+                eprintln!("identifier.value not {}, got {}", value, identifier.value);
+                return false;
+            }
+
+            if identifier.token_literal() != value {
+                eprintln!(
+                    "identifier.token_literal not {} got {}",
+                    value,
+                    identifier.token_literal()
+                );
+                return false;
+            }
+
+            true
+        } else {
+            eprintln!("expression no Identifier, got {:?}", expression);
+            false
+        }
+    }
+
     fn test_integer_literal(integer_literal: ExpressionVariants, value: i64) -> bool {
         if let ExpressionVariants::Integer(int_var) = integer_literal {
             if int_var.value != value {
-                eprint!("int_var.value not {}, got {}", value, int_var.value);
+                eprintln!("int_var.value not {}, got {}", value, int_var.value);
                 return false;
             }
 
             if int_var.token_literal() != format!("{}", value) {
-                eprint!(
+                eprintln!(
                     "int_var.token_literal() not {}, got {}",
                     value,
                     int_var.token_literal()
@@ -320,13 +399,13 @@ mod tests {
 
     struct InfixTest {
         input: String,
-        left_value: i64,
+        left_value: Expected,
         operator: String,
-        right_value: i64,
+        right_value: Expected,
     }
 
     impl InfixTest {
-        fn new(input: &str, left_value: i64, operator: &str, right_value: i64) -> Self {
+        fn new(input: &str, left_value: Expected, operator: &str, right_value: Expected) -> Self {
             Self {
                 input: input.to_string(),
                 left_value,
@@ -337,25 +416,20 @@ mod tests {
     }
 
     #[test]
-
     fn test_parsing_infix_expressions() {
         let tests: Vec<InfixTest> = vec![
-            InfixTest::new("5+5;", 5, "+", 5),
-            InfixTest::new("5-5;", 5, "-", 5),
-            InfixTest::new("5*5;", 5, "*", 5),
-            InfixTest::new("5/5;", 5, "/", 5),
-            InfixTest::new("5>5;", 5, ">", 5),
-            InfixTest::new("5<5;", 5, "<", 5),
-            InfixTest::new("5 == 5;", 5, "==", 5),
-            InfixTest::new("5 != 5;", 5, "!=", 5),
+            InfixTest::new("5+5;", Expected::Int(5), "+", Expected::Int(5)),
+            InfixTest::new("5-5;", Expected::Int(5), "-", Expected::Int(5)),
+            InfixTest::new("5*5;", Expected::Int(5), "*", Expected::Int(5)),
+            InfixTest::new("5/5;", Expected::Int(5), "/", Expected::Int(5)),
+            InfixTest::new("5>5;", Expected::Int(5), ">", Expected::Int(5)),
+            InfixTest::new("5<5;", Expected::Int(5), "<", Expected::Int(5)),
+            InfixTest::new("5 == 5;", Expected::Int(5), "==", Expected::Int(5)),
+            InfixTest::new("5 != 5;", Expected::Int(5), "!=", Expected::Int(5)),
         ];
 
         for test in tests {
-            let lexer = Lexer::new(&test.input);
-            let mut parser = Parser::new(lexer);
-            let program: mono::ast::Program = parser.parse_program();
-
-            check_parser_errors(parser);
+            let program = create_parse_program(&test.input);
 
             if program.statements.len() != 1 {
                 panic!(
@@ -367,8 +441,10 @@ mod tests {
             if let StatementVariant::Expression(expr_stmt) = &program.statements[0] {
                 if let Some(exp_var) = &expr_stmt.expression {
                     if let ExpressionVariants::Infix(inf_exp) = exp_var {
-                        if !test_integer_literal(*inf_exp.left.clone(), test.left_value) {
-                            return;
+                        if let Expected::Int(val) = test.left_value {
+                            if !test_integer_literal(*inf_exp.left.clone(), val) {
+                                return;
+                            }
                         }
 
                         if inf_exp.operator != test.operator {
@@ -377,9 +453,10 @@ mod tests {
                                 test.operator, inf_exp.operator
                             );
                         }
-
-                        if !test_integer_literal(*inf_exp.right.clone(), test.right_value) {
-                            return;
+                        if let Expected::Int(val) = test.right_value {
+                            if !test_integer_literal(*inf_exp.right.clone(), val) {
+                                return;
+                            }
                         }
                     } else {
                         panic!("exp_var is not an InfixExpression, got {:?}", exp_var);
@@ -410,6 +487,7 @@ mod tests {
             }
         }
     }
+
     #[test]
     fn test_operator_precedence_parsing() {
         let tests: Vec<OpPrecedenceTest> = vec![
@@ -421,20 +499,87 @@ mod tests {
             OpPrecedenceTest::new("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
             OpPrecedenceTest::new("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
             OpPrecedenceTest::new("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+            OpPrecedenceTest::new("true", "true"),
+            OpPrecedenceTest::new("false", "false"),
+            OpPrecedenceTest::new("3 > 5 == false", "((3 > 5) == false)"),
+            OpPrecedenceTest::new("3< 5 == true", "((3 < 5) == true)"),
         ];
 
         for test in tests {
-            let lexer = Lexer::new(&test.input);
-            let mut parser = Parser::new(lexer);
-            dbg!("Current test: {}", test.expected.clone());
-            let program: Program = parser.parse_program();
-
-            check_parser_errors(parser);
+            let program = create_parse_program(&test.input);
 
             let actual = program.string();
             if actual != test.expected {
                 panic!("Expected {}, got {}", test.expected, actual);
             }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    enum Expected {
+        Int(i64),
+        String(String),
+        Boolean(bool),
+    }
+
+    fn test_literal_expression(expression: ExpressionVariants, expected: Expected) -> bool {
+        match expected {
+            Expected::Int(v) => test_integer_literal(expression, v),
+            Expected::String(v) => test_identifier(expression, &v),
+            Expected::Boolean(v) => test_boolean_literal(expression, v),
+        }
+    }
+
+    fn test_boolean_literal(expression: ExpressionVariants, value: bool) -> bool {
+        if let ExpressionVariants::Boolean(bool_exp) = expression {
+            if bool_exp.value != value {
+                eprintln!("boolean.value is not {}, got {}", value, bool_exp.value);
+                return false;
+            }
+
+            if bool_exp.token_literal() != format!("{}", value) {
+                eprintln!(
+                    "boolean.token_literal() not {}, got {}",
+                    format!("{}", value),
+                    bool_exp.token_literal()
+                );
+                return false;
+            }
+
+            true
+        } else {
+            eprintln!("Expression is not a Boolean, got {:?}", expression);
+            false
+        }
+    }
+
+    fn test_infix_expression(
+        expression: ExpressionVariants,
+        left: Expected,
+        operator: &str,
+        right: Expected,
+    ) -> bool {
+        if let ExpressionVariants::Infix(inf_exp) = expression {
+            if !test_literal_expression(ExpressionVariants::Infix(inf_exp.clone()), left) {
+                return false;
+            }
+
+            if inf_exp.operator != operator {
+                eprintln!(
+                    "inf_exp.operator is not {}, got {}",
+                    operator, inf_exp.operator
+                );
+                return false;
+            }
+
+            if !test_literal_expression(*inf_exp.right, right) {
+                return false;
+            }
+
+            return true;
+        } else {
+            eprintln!("expression is not InfixExpression, got {:?}", expression);
+            return false;
         }
     }
 }
