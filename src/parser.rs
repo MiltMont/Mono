@@ -1,4 +1,4 @@
-use std::{collections::HashMap, os::linux::raw::stat};
+use std::collections::HashMap;
 
 use crate::{
     ast::{
@@ -43,6 +43,8 @@ impl Parser {
         parser.register_prefix(TokenType::TRUE, Parser::parse_boolean);
         parser.register_prefix(TokenType::FALSE, Parser::parse_boolean);
 
+        parser.register_prefix(TokenType::LPAREN, Parser::parse_grouped_expressions);
+
         // Register infix parse functions
         parser.register_infix(TokenType::PLUS, Parser::parse_infix_expression);
         parser.register_infix(TokenType::MINUS, Parser::parse_infix_expression);
@@ -59,6 +61,17 @@ impl Parser {
     /////////////////////
     // Parsing functions.
     /////////////////////
+    fn parse_grouped_expressions(&mut self) -> ExpressionVariant {
+        self.next_token();
+
+        let expression = self.parse_expression(Precedence::LOWEST.index());
+
+        if !self.expect_peek(TokenType::RPAREN) {
+            return None;
+        }
+
+        return expression;
+    }
 
     fn parse_boolean(&mut self) -> Option<ExpressionVariants> {
         Some(ExpressionVariants::Boolean(Boolean {
@@ -139,6 +152,7 @@ impl Parser {
 
     fn parse_infix_expression(&mut self, left: ExpressionVariants) -> Option<ExpressionVariants> {
         // TODO: Fix this, its ugly.
+        // TODO: Add Default implementation for this struct.
         let mut expression = InfixExpression {
             token: self.current_token.clone(),
             operator: self.current_token.literal.clone(),
@@ -226,7 +240,12 @@ impl Parser {
 
         // We are skipping the expressions
         // until we encounter a semicolon
+        /*
         while !self.current_token_is(TokenType::SEMICOLON) {
+            self.next_token();
+        }
+        */
+        if self.peek_token_is(TokenType::SEMICOLON) {
             self.next_token();
         }
 

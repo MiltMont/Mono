@@ -38,8 +38,8 @@ impl Node for Program {
 pub trait Statement: Node {
     fn statement_node(&self);
 }
-// TODO: How can I do this better?
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 pub enum StatementVariant {
     Let(LetStatement),
     Return(ReturnStatement),
@@ -65,7 +65,29 @@ impl Node for StatementVariant {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct BlockStatement {
+    pub token: Token, // the { token
+    pub statements: Vec<StatementVariant>,
+}
+
+impl Node for BlockStatement {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        let mut out = String::new();
+
+        for statement in self.statements.iter() {
+            out.push_str(&statement.string());
+        }
+
+        out
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct LetStatement {
     pub token: Token,
     pub name: Identifier,
@@ -104,7 +126,7 @@ impl Node for LetStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReturnStatement {
     pub token: Token,
     pub return_value: ExpressionVariant,
@@ -137,7 +159,7 @@ impl Node for ReturnStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: ExpressionVariant,
@@ -283,12 +305,41 @@ impl Node for Boolean {
 }
 
 #[derive(Debug, Clone)]
+pub struct IfExpression {
+    pub token: Token,
+    pub condition: Box<ExpressionVariants>,
+    pub consequence: BlockStatement,
+    pub alternative: Option<BlockStatement>,
+}
+
+impl Node for IfExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn string(&self) -> String {
+        let mut out = String::from(format!(
+            "if{} {}",
+            self.condition.string(),
+            self.consequence.string()
+        ));
+
+        if let Some(alternative) = &self.alternative {
+            out.push_str(&format!("else {}", alternative.string()));
+        }
+
+        out
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum ExpressionVariants {
     Ident(Identifier),
     Integer(IntegerLiteral),
     Prefix(PrefixExpression),
     Infix(InfixExpression),
     Boolean(Boolean),
+    If(IfExpression),
 }
 
 impl Node for ExpressionVariants {
@@ -303,6 +354,7 @@ impl Node for ExpressionVariants {
             ExpressionVariants::Prefix(pe) => pe.string(),
             ExpressionVariants::Infix(ie) => ie.string(),
             ExpressionVariants::Boolean(b) => b.string(),
+            ExpressionVariants::If(ie) => ie.string(),
         }
     }
 }

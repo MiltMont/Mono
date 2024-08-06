@@ -5,7 +5,7 @@ mod tests {
     use std::vec;
 
     use mono::{
-        ast::{ExpressionVariants, Node, Program, StatementVariant},
+        ast::{ExpressionStatement, ExpressionVariants, Node, Program, StatementVariant},
         lexer::Lexer,
         parser::Parser,
     };
@@ -181,22 +181,16 @@ mod tests {
             );
         }
 
-        if let StatementVariant::Expression(exp) = &program.statements[0] {
-            if let Some(expr_variant) = &exp.expression {
-                if let ExpressionVariants::Ident(identifier) = expr_variant {
-                    if identifier.value != "foobar" {
-                        panic!("ident.value not foobar, got {}", identifier.value);
-                    }
-
-                    if identifier.token_literal() != "foobar" {
-                        panic!(
-                            "ident.token_literal() not foobar, got {}",
-                            identifier.token_literal()
-                        )
-                    }
+        if let StatementVariant::Expression(expression_statement) = &program.statements[0] {
+            if let Some(ExpressionVariants::Ident(identifier)) = &expression_statement.expression {
+                if identifier.value != "foobar" {
+                    panic!("ident.value not foobar, got {}", identifier.value);
                 }
             } else {
-                panic!("exp is not Identifier, got {:?}", exp.expression);
+                panic!(
+                    "expression is not an Identifier, got {:?}",
+                    expression_statement.expression
+                )
             }
         } else {
             panic!(
@@ -292,15 +286,15 @@ mod tests {
     struct PrefixTest {
         input: String,
         operator: String,
-        integer_value: i64,
+        value: Expected,
     }
 
     impl PrefixTest {
-        fn new(input: &str, operator: &str, integer_value: i64) -> Self {
+        fn new(input: &str, operator: &str, value: Expected) -> Self {
             Self {
                 input: input.to_string(),
                 operator: operator.to_string(),
-                integer_value,
+                value,
             }
         }
     }
@@ -308,8 +302,10 @@ mod tests {
     #[test]
     fn test_parsing_prefix_expressions() {
         let tests: Vec<PrefixTest> = vec![
-            PrefixTest::new("!5;", "!", 5),
-            PrefixTest::new("-15;", "-", 15),
+            PrefixTest::new("!5;", "!", Expected::Int(5)),
+            PrefixTest::new("-15;", "-", Expected::Int(-15)),
+            PrefixTest::new("!true;", "!", Expected::Boolean(true)),
+            PrefixTest::new("!false;", "!", Expected::Boolean(false)),
         ];
 
         for test in tests {
@@ -332,8 +328,10 @@ mod tests {
                             );
                         }
 
-                        if !test_integer_literal(*pre_expr.right.clone(), test.integer_value) {
-                            break;
+                        if let Expected::Int(value) = test.value {
+                            if !test_integer_literal(*pre_expr.right.clone(), value) {
+                                break;
+                            }
                         }
                     } else {
                         panic!("pre_expr is not a PrefixExpression, got {:?}", exp_variant);
@@ -426,6 +424,24 @@ mod tests {
             InfixTest::new("5<5;", Expected::Int(5), "<", Expected::Int(5)),
             InfixTest::new("5 == 5;", Expected::Int(5), "==", Expected::Int(5)),
             InfixTest::new("5 != 5;", Expected::Int(5), "!=", Expected::Int(5)),
+            InfixTest::new(
+                "true == true",
+                Expected::Boolean(true),
+                "==",
+                Expected::Boolean(true),
+            ),
+            InfixTest::new(
+                "true != false",
+                Expected::Boolean(true),
+                "!=",
+                Expected::Boolean(false),
+            ),
+            InfixTest::new(
+                "false == false",
+                Expected::Boolean(false),
+                "==",
+                Expected::Boolean(false),
+            ),
         ];
 
         for test in tests {
@@ -503,6 +519,11 @@ mod tests {
             OpPrecedenceTest::new("false", "false"),
             OpPrecedenceTest::new("3 > 5 == false", "((3 > 5) == false)"),
             OpPrecedenceTest::new("3< 5 == true", "((3 < 5) == true)"),
+            OpPrecedenceTest::new("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+            OpPrecedenceTest::new("(5 + 5) * 2", "((5 + 5) * 2)"),
+            OpPrecedenceTest::new("2 / (5 + 5)", "(2 / (5 + 5))"),
+            OpPrecedenceTest::new("-(5 + 5)", "(-(5 + 5))"),
+            OpPrecedenceTest::new("!(true == true)", "(!(true == true))"),
         ];
 
         for test in tests {
@@ -580,6 +601,66 @@ mod tests {
         } else {
             eprintln!("expression is not InfixExpression, got {:?}", expression);
             return false;
+        }
+    }
+
+    #[test]
+    fn test_if_expression() {
+        let input = "if (x < y) { x }";
+
+        let program = create_parse_program(input);
+
+        if program.statements.len() != 1 {
+            panic!(
+                "program.statements does not contain 1 statement, got {}",
+                program.statements.len()
+            );
+        }
+
+        if let StatementVariant::Expression(expr_stmt) = &program.statements[0] {
+            if let Some(ExpressionVariants::If(if_exp)) = &expr_stmt.expression {
+                if !test_infix_expression(
+                    *if_exp.condition.clone(),
+                    Expected::String("x".to_string()),
+                    "<",
+                    Expected::String("y".to_string()),
+                ) {
+                    panic!();
+                }
+
+                if if_exp.consequence.statements.len() != 1 {
+                    panic!(
+                        "Consequence is not 1 statement, got {}",
+                        if_exp.consequence.statements.len()
+                    );
+                }
+
+                if let StatementVariant::Expression(consequence) = &if_exp.consequence.statements[0]
+                {
+                    if !test_identifier(consequence.expression.clone().unwrap(), "x") {
+                        panic!();
+                    }
+                } else {
+                    panic!();
+                }
+
+                if let Some(_) = if_exp.alternative {
+                    panic!(
+                        "if_exp.alternative was not None, got {:?}",
+                        if_exp.alternative
+                    );
+                }
+            } else {
+                panic!(
+                    "expression_statement is not IfExpression, got {:?}",
+                    expr_stmt
+                );
+            }
+        } else {
+            panic!(
+                "program.statements[0] is not an ExpressionStatement, got {:?}",
+                program.statements[0]
+            )
         }
     }
 }
