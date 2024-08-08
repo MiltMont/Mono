@@ -5,7 +5,7 @@ use crate::{lexer::Lexer, token::TokenType};
 
 pub fn start() {
     loop {
-        print!("{} ", ">>".yellow());
+        print!("{} ", "mono >>".yellow());
         let input: String = read!("{}\n");
 
         let mut lexer = Lexer::new(&input);

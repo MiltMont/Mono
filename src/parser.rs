@@ -1,13 +1,13 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, os::linux::raw::stat};
 
 use crate::{
     ast::{
-        Boolean, ExpressionStatement, ExpressionVariant, ExpressionVariants, Identifier,
-        InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement,
-        StatementVariant,
+        BlockStatement, Boolean, ExpressionStatement, ExpressionVariant, ExpressionVariants,
+        Identifier, IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression,
+        Program, ReturnStatement, StatementVariant,
     },
     lexer::Lexer,
-    token::{Token, TokenType},
+    token::{self, Token, TokenType},
 };
 
 pub struct Parser {
@@ -45,6 +45,8 @@ impl Parser {
 
         parser.register_prefix(TokenType::LPAREN, Parser::parse_grouped_expressions);
 
+        parser.register_prefix(TokenType::IF, Parser::parse_if_expression);
+
         // Register infix parse functions
         parser.register_infix(TokenType::PLUS, Parser::parse_infix_expression);
         parser.register_infix(TokenType::MINUS, Parser::parse_infix_expression);
@@ -61,6 +63,63 @@ impl Parser {
     /////////////////////
     // Parsing functions.
     /////////////////////
+    fn parse_if_expression(&mut self) -> ExpressionVariant {
+        // TODO: Add Default implementation to IfExpression.
+        let mut expression = IfExpression {
+            token: self.current_token.clone(),
+            condition: Box::new(ExpressionVariants::Ident(Identifier {
+                token: self.current_token.clone(),
+                value: "".to_string(),
+            })),
+            consequence: BlockStatement {
+                token: self.current_token.clone(),
+                statements: Vec::new(),
+            },
+            alternative: None,
+        };
+
+        if !self.expect_peek(TokenType::LPAREN) {
+            return None;
+        }
+
+        self.next_token();
+        // TODO: Optimize this
+        expression.condition = Box::new(self.parse_expression(Precedence::LOWEST.index()).unwrap());
+
+        if !self.expect_peek(TokenType::RPAREN) {
+            return None;
+        }
+
+        if !self.expect_peek(TokenType::LBRACE) {
+            return None;
+        }
+
+        expression.consequence = self.parse_block_statement();
+
+        Some(ExpressionVariants::If(expression))
+    }
+
+    fn parse_block_statement(&mut self) -> BlockStatement {
+        let mut block = BlockStatement {
+            token: self.current_token.clone(),
+            statements: Vec::new(),
+        };
+
+        self.next_token();
+
+        while !self.current_token_is(TokenType::RBRACE) && !self.current_token_is(TokenType::EOF) {
+            let statement = self.parse_statement();
+
+            if let Some(p) = statement {
+                block.statements.push(p);
+            }
+
+            self.next_token();
+        }
+
+        block
+    }
+
     fn parse_grouped_expressions(&mut self) -> ExpressionVariant {
         self.next_token();
 

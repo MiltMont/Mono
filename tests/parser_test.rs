@@ -5,7 +5,10 @@ mod tests {
     use std::vec;
 
     use mono::{
-        ast::{ExpressionStatement, ExpressionVariants, Node, Program, StatementVariant},
+        ast::{
+            ExpressionStatement, ExpressionVariants, InfixExpression, Node, Program,
+            StatementVariant,
+        },
         lexer::Lexer,
         parser::Parser,
     };
@@ -366,7 +369,7 @@ mod tests {
 
             true
         } else {
-            eprintln!("expression no Identifier, got {:?}", expression);
+            eprintln!("expression is not an Identifier, got {:?}", expression);
             false
         }
     }
@@ -597,7 +600,7 @@ mod tests {
                 return false;
             }
 
-            return true;
+            true
         } else {
             eprintln!("expression is not InfixExpression, got {:?}", expression);
             return false;
@@ -637,11 +640,16 @@ mod tests {
 
                 if let StatementVariant::Expression(consequence) = &if_exp.consequence.statements[0]
                 {
-                    if !test_identifier(consequence.expression.clone().unwrap(), "x") {
-                        panic!();
+                    if let Some(ExpressionVariants::Infix(exp)) = &consequence.expression {
+                        if !test_identifier(*exp.right.clone(), "x") {
+                            panic!();
+                        }
                     }
                 } else {
-                    panic!();
+                    panic!(
+                        "consequence.statements[0] is not an Expression statement, got {:?}",
+                        if_exp.consequence.statements[0]
+                    );
                 }
 
                 if let Some(_) = if_exp.alternative {
